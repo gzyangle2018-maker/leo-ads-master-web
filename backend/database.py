@@ -86,6 +86,33 @@ class Database:
             )
         ''')
 
+        # Login & activity logs
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS login_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                username TEXT,
+                action TEXT NOT NULL,
+                ip TEXT,
+                user_agent TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+
+        # User usage quota (analysis count, LLM calls)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS user_usage (
+                user_id INTEGER PRIMARY KEY,
+                analysis_count INTEGER DEFAULT 0,
+                llm_calls INTEGER DEFAULT 0,
+                quota_analysis INTEGER DEFAULT -1,
+                quota_llm INTEGER DEFAULT -1,
+                last_reset TEXT,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+
         # Create default admin if not exists
         cursor.execute("SELECT id FROM users WHERE role='admin' LIMIT 1")
         if not cursor.fetchone():
@@ -345,6 +372,140 @@ class Database:
                 'provider': r[4] or '', 'api_key': (r[5][:6] + '****') if r[5] else '',
                 'base_url': r[6] or '', 'model': r[7] or '',
                 'use_team_shared': r[8] if r[8] is not None else 1
+            }
+            for r in rows
+        ]
+
+    def change_password(self, user_id: int, old_password: str, new_password: str) -> Tuple[bool, str]:
+        conn = self._connect()
+        cursor = conn.cursor()
+        cursor.execute("SELECT password_hash, salt FROM users WHERE id=?", (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return False, '用户不存在'
+        db_hash, salt = row
+        old_hash, _ = self._hash_password(old_password, salt)
+        if old_hash != db_hash:
+            conn.close()
+            return False, '原密码错误'
+        new_hash, new_salt = self._hash_password(new_password)
+        cursor.execute("UPDATE users SET password_hash=?, salt=? WHERE id=?", (new_hash, new_salt, user_id))
+        conn.commit()
+        conn.close()
+        return True, '密码修改成功'
+
+    def log_login(self, user_id: int, username: str, action: str, ip: str = '', user_agent: str = ''):
+        conn = self._connect()
+        cursor = conn.cursor()
+        now = datetime.now().isoformat()
+        cursor.execute('''
+            INSERT INTO login_logs (user_id, username, action, ip, user_agent, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, username, action, ip, user_agent, now))
+        conn.commit()
+        conn.close()
+
+    def get_login_logs(self, user_id: int = None, role: str = 'member', limit: int = 200) -> List[Dict]:
+        conn = self._connect()
+        cursor = conn.cursor()
+        if role == 'admin' and user_id is None:
+            cursor.execute('''
+                SELECT l.id, l.user_id, l.username, l.action, l.ip, l.created_at,
+                       u.display_name
+                FROM login_logs l LEFT JOIN users u ON l.user_id = u.id
+                ORDER BY l.created_at DESC LIMIT ?
+            ''', (limit,))
+        else:
+            cursor.execute('''
+                SELECT l.id, l.user_id, l.username, l.action, l.ip, l.created_at,
+                       u.display_name
+                FROM login_logs l LEFT JOIN users u ON l.user_id = u.id
+                WHERE l.user_id = ?
+                ORDER BY l.created_at DESC LIMIT ?
+            ''', (user_id, limit))
+        rows = cursor.fetchall()
+        conn.close()
+        return [
+            {
+                'id': r[0], 'user_id': r[1], 'username': r[2], 'action': r[3],
+                'ip': r[4], 'created_at': r[5], 'display_name': r[6]
+            }
+            for r in rows
+        ]
+
+    def get_user_usage(self, user_id: int) -> Dict:
+        conn = self._connect()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT analysis_count, llm_calls, quota_analysis, quota_llm, last_reset
+            FROM user_usage WHERE user_id=?
+        ''', (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            now = datetime.now().isoformat()
+            cursor.execute('''
+                INSERT INTO user_usage (user_id, analysis_count, llm_calls, quota_analysis, quota_llm, last_reset)
+                VALUES (?, 0, 0, -1, -1, ?)
+            ''', (user_id, now))
+            conn.commit()
+            conn.close()
+            return {'analysis_count': 0, 'llm_calls': 0, 'quota_analysis': -1, 'quota_llm': -1}
+        conn.close()
+        return {
+            'analysis_count': row[0], 'llm_calls': row[1],
+            'quota_analysis': row[2], 'quota_llm': row[3]
+        }
+
+    def increment_usage(self, user_id: int, field: str = 'analysis_count'):
+        conn = self._connect()
+        cursor = conn.cursor()
+        usage = self.get_user_usage(user_id)
+        if field == 'analysis_count':
+            cursor.execute("INSERT OR REPLACE INTO user_usage (user_id, analysis_count, llm_calls, quota_analysis, quota_llm, last_reset) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, usage['analysis_count'] + 1, usage['llm_calls'], usage['quota_analysis'], usage['quota_llm'], datetime.now().isoformat()))
+        elif field == 'llm_calls':
+            cursor.execute("INSERT OR REPLACE INTO user_usage (user_id, analysis_count, llm_calls, quota_analysis, quota_llm, last_reset) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_id, usage['analysis_count'], usage['llm_calls'] + 1, usage['quota_analysis'], usage['quota_llm'], datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+
+    def set_user_quota(self, user_id: int, quota_analysis: int = -1, quota_llm: int = -1):
+        conn = self._connect()
+        cursor = conn.cursor()
+        usage = self.get_user_usage(user_id)
+        cursor.execute('''
+            INSERT OR REPLACE INTO user_usage (user_id, analysis_count, llm_calls, quota_analysis, quota_llm, last_reset)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, usage['analysis_count'], usage['llm_calls'], quota_analysis, quota_llm, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+
+    def get_all_reports(self, role: str = 'member', user_id: int = None) -> List[Dict]:
+        conn = self._connect()
+        cursor = conn.cursor()
+        if role == 'admin':
+            cursor.execute('''
+                SELECT r.id, r.title, r.asin, r.report_type, r.created_at, r.data_summary,
+                       u.username, u.display_name
+                FROM reports r JOIN users u ON r.user_id = u.id
+                ORDER BY r.created_at DESC
+            ''')
+        else:
+            cursor.execute('''
+                SELECT r.id, r.title, r.asin, r.report_type, r.created_at, r.data_summary,
+                       u.username, u.display_name
+                FROM reports r JOIN users u ON r.user_id = u.id
+                WHERE r.user_id = ?
+                ORDER BY r.created_at DESC
+            ''', (user_id,))
+        rows = cursor.fetchall()
+        conn.close()
+        return [
+            {
+                'id': r[0], 'title': r[1], 'asin': r[2], 'report_type': r[3],
+                'created_at': r[4], 'data_summary': r[5],
+                'username': r[6], 'display_name': r[7]
             }
             for r in rows
         ]
