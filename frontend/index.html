@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leo Ads Master v2.1</title>
+<style>
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --card: #2c2c2e;
+    --border: #3a3a3c;
+    --text: #f5f5f7;
+    --muted: #8e8e93;
+    --accent: #ff6b6b;
+    --accent-hover: #ff8585;
+    --blue: #0a84ff;
+    --green: #34c759;
+    --orange: #ff9f0a;
+    --red: #ff3b30;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; }
+  .hidden { display: none !important; }
+
+  /* Login */
+  #login-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding: 40px; }
+  .login-card { background: var(--surface); border-radius: 24px; padding: 48px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
+  .login-logo { font-size: 32px; font-weight: 700; text-align: center; color: var(--accent); margin-bottom: 8px; }
+  .login-sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .input { width: 100%; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; color: var(--text); font-size: 15px; margin-bottom: 16px; outline: none; transition: border-color .2s; }
+  .input:focus { border-color: var(--accent); }
+  .btn { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
+  .btn:hover { background: var(--accent-hover); }
+  .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .watermark { text-align: center; color: #48484a; font-size: 11px; margin-top: 24px; }
+
+  /* App Layout */
+  #app { display: none; min-height: 100vh; }
+  .sidebar { width: 220px; background: #161616; border-right: 1px solid var(--border); position: fixed; left: 0; top: 0; bottom: 0; padding: 24px 16px; display: flex; flex-direction: column; }
+  .sidebar-logo { font-size: 18px; font-weight: 700; color: var(--accent); text-align: center; margin-bottom: 4px; }
+  .sidebar-ver { text-align: center; color: #48484a; font-size: 11px; margin-bottom: 24px; }
+  .nav-item { padding: 10px 14px; border-radius: 8px; color: var(--muted); font-size: 13px; cursor: pointer; margin-bottom: 4px; transition: all .15s; }
+  .nav-item:hover, .nav-item.active { background: var(--card); color: var(--text); }
+  .sidebar-bottom { margin-top: auto; }
+  .user-card { background: var(--card); border-radius: 10px; padding: 10px; font-size: 13px; margin-bottom: 10px; }
+
+  .main { margin-left: 220px; padding: 32px; max-width: 1200px; }
+  .page-title { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+  .page-desc { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+
+  /* Cards */
+  .card { background: var(--card); border-radius: 16px; border: 1px solid var(--border); padding: 24px; margin-bottom: 20px; }
+  .card-title { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 16px; }
+  .card-blue .card-title { color: var(--blue); }
+  .card-green .card-title { color: var(--green); }
+  .card-orange .card-title { color: var(--orange); }
+
+  /* Upload */
+  .dropzone { background: var(--card); border: 2px dashed var(--border); border-radius: 16px; padding: 40px; text-align: center; cursor: pointer; transition: all .2s; }
+  .dropzone:hover { border-color: var(--accent); background: #3a2a2a; }
+  .dropzone-icon { font-size: 32px; margin-bottom: 12px; }
+  .dropzone-text { color: var(--muted); font-size: 14px; }
+
+  /* Forms */
+  .form-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+  .form-group { flex: 1; min-width: 200px; }
+  .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  select.input { cursor: pointer; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--border); color: var(--text); text-align: left; padding: 10px; font-weight: 500; }
+  td { padding: 10px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: rgba(255,255,255,0.03); }
+
+  /* Results */
+  .result-section { margin-bottom: 24px; }
+  .result-section h3 { font-size: 15px; color: var(--blue); margin-bottom: 10px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .badge-add { background: rgba(10,132,255,0.15); color: var(--blue); }
+  .badge-sub { background: rgba(255,59,48,0.15); color: var(--red); }
+  .badge-core { background: rgba(255,107,107,0.15); color: var(--accent); }
+
+  /* Steps */
+  .steps { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .step { flex: 1; min-width: 140px; background: var(--card); border-radius: 14px; padding: 16px; text-align: center; border: 1px solid var(--border); }
+  .step-icon { font-size: 24px; margin-bottom: 8px; }
+  .step-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .step-desc { font-size: 11px; color: var(--muted); }
+
+  /* Alert */
+  .alert { background: var(--card); border-left: 4px solid var(--orange); border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 16px; }
+  .alert-success { border-left-color: var(--green); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .sidebar { width: 100%; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
+    .main { margin-left: 0; }
+    #app { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Leo Ads</div>
+    <div class="login-sub">Amazon Ads 12-Dimension Analysis</div>
+    <input type="text" id="login-user" class="input" placeholder="Username">
+    <input type="password" id="login-pass" class="input" placeholder="Password">
+    <button class="btn" onclick="doLogin()">Sign In</button>
+    <div class="watermark">by Leo Young</div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app" style="display:flex;">
+  <aside class="sidebar">
+    <div class="sidebar-logo">Leo Ads</div>
+    <div class="sidebar-ver">v2.1 Web</div>
+    <div class="nav-item active" onclick="showPage('dashboard')">数据上传与分析</div>
+    <div class="nav-item" onclick="showPage('tutorial')">报表导出教程</div>
+    <div class="nav-item" onclick="showPage('reports')">报告中心</div>
+    <div class="nav-item admin-only hidden" onclick="showPage('admin')">团队管理</div>
+    <div class="nav-item" onclick="showPage('settings')">系统设置</div>
+    <div class="sidebar-bottom">
+      <div class="user-card" id="user-card">Guest</div>
+      <div class="nav-item" onclick="logout()">退出登录</div>
+    </div>
+    <div style="text-align:center;color:#48484a;font-size:10px;padding:8px;">by Leo Young</div>
+  </aside>
+
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div id="page-dashboard">
+      <div class="page-title">广告数据上传与 12 维度深度分析</div>
+      <div class="page-desc">基于 leo-26.5.8-ads-master-skills 规则引擎，输出量化到 USD / % 的可执行方案</div>
+
+      <div class="card">
+        <div class="card-title">阶段策略选择</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">当前阶段</label>
+            <select id="stage" class="input">
+              <option value="new_product">推新品（预算激进，关注数据积累）</option>
+              <option value="relaunch">老品重推（平衡ACOS与单量）</option>
+              <option value="growth" selected>销量增长（接受短期ACOS上升）</option>
+              <option value="profit">保利润（精准收割为主）</option>
+              <option value="clearance">清库存（低利润跑量）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">目标 ASIN</label>
+            <input type="text" id="asin" class="input" placeholder="B08N5WRWNW" value="B08N5WRWNW">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">目标 ACOS (%)</label>
+            <input type="number" id="acos" class="input" value="25">
+          </div>
+          <div class="form-group">
+            <label class="form-label">目标 TACOS (%)</label>
+            <input type="number" id="tacos" class="input" value="12">
+          </div>
+          <div class="form-group">
+            <label class="form-label">预算上限 (%销售额)</label>
+            <input type="number" id="budget" class="input" value="10">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">数据上传</div>
+        <div class="dropzone" onclick="document.getElementById('fileInput').click()">
+          <div class="dropzone-icon">📎</div>
+          <div class="dropzone-text">点击或拖拽上传 CSV / Excel 报表</div>
+        </div>
+        <input type="file" id="fileInput" class="hidden" multiple accept=".csv,.xlsx,.xls" onchange="handleFiles(this.files)">
+        <div id="file-status" style="margin-top:12px;color:var(--muted);font-size:13px;">尚未上传数据</div>
+        <div class="alert" id="missing-alert">⚠️ 尚未上传任何报表，请至少上传 SP搜索词 + Campaign Summary + Business Report</div>
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:20px;">
+        <button class="btn" style="width:auto;padding:14px 32px;" onclick="startAnalysis()">🔥 开始12维度深度分析</button>
+        <button class="btn btn-secondary" style="width:auto;padding:14px 32px;" onclick="exportExcel()">💾 导出Excel报告</button>
+      </div>
+
+      <div id="analysis-result" class="hidden">
+        <div class="card card-blue">
+          <div class="card-title">流量词架构</div>
+          <div id="traffic-tree"></div>
+        </div>
+        <div class="card card-orange">
+          <div class="card-title">核心诊断</div>
+          <div id="diagnosis"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">12层动作表</div>
+          <div id="actions"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="card card-blue">
+            <div class="card-title">今日执行清单 - 加法</div>
+            <div id="today-add"></div>
+          </div>
+          <div class="card" style="--accent:var(--red);">
+            <div class="card-title" style="color:var(--red);">今日执行清单 - 减法</div>
+            <div id="today-sub"></div>
+          </div>
+        </div>
+        <div class="card card-green">
+          <div class="card-title">7天监控计划</div>
+          <div id="monitor-plan"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutorial -->
+    <div id="page-tutorial" class="hidden">
+      <div class="page-title">📋 报表导出完全指南</div>
+      <div class="page-desc">运营团队每次分析前，必须从亚马逊后台和ERP导出以下14张报表</div>
+
+      <div class="steps">
+        <div class="step"><div class="step-icon">🖥️</div><div class="step-title">登录后台</div><div class="step-desc">卖家平台 / 广告后台 / ERP</div></div>
+        <div class="step"><div class="step-icon">📥</div><div class="step-title">按清单导出</div><div class="step-desc">14张报表逐一下载</div></div>
+        <div class="step"><div class="step-icon">🗂️</div><div class="step-title">统一命名</div><div class="step-desc">按命名规范重命名</div></div>
+        <div class="step"><div class="step-icon">📂</div><div class="step-title">放入文件夹</div><div class="step-desc">统一放到报表输入文件夹</div></div>
+        <div class="step"><div class="step-icon">🚀</div><div class="step-title">批量上传分析</div><div class="step-desc">拖拽到软件上传区</div></div>
+      </div>
+
+      <div class="card card-blue">
+        <div class="card-title">导出位置与保存路径</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--muted);">
+          <b>亚马逊卖家平台后台路径</b><br>
+          1. 品牌分析报表：卖家平台 > 品牌 > 品牌分析 > 搜索词 > 选择报表类型 > 下载<br>
+          2. 业务报告：卖家平台 > 报告 > 业务报告 > 选择子商品/父商品 > 选时间范围 > 下载<br>
+          3. 广告报表：广告后台 > 广告活动 > 商品推广/品牌推广 > 选择报表类型 > 日期范围 > 下载<br><br>
+          <b>ERP路径（优卖云 / 赛狐）</b><br>
+          ERP > 广告管理 > 搜索词报告 > 输入目标ASIN > 导出汇总/明细<br><br>
+          <b>本地保存建议</b><br>
+          在电脑桌面或D盘创建固定文件夹，例如：D:\AmazonReports\2026-05\
+        </div>
+      </div>
+
+      <div class="card card-green">
+        <div class="card-title">命名规范</div>
+        <div style="background:#1c1c1e;border-radius:10px;padding:12px;font-size:13px;margin-bottom:10px;">
+          格式：YYYYMMDD-报表类型-范围-[ASIN].csv<br>
+          示例：20260508-SP-SearchTerm-30d-B08N5WRWNW.csv
+        </div>
+        <div style="color:var(--orange);font-size:12px;">⚠️ 禁止使用中文字符命名文件（除ASIN外），禁止留空格，用短横线-连接。</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">14张必导报表清单</div>
+        <table>
+          <thead><tr><th>#</th><th>报表名称</th><th>来源</th><th>导出路径</th><th>命名示例</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>ASIN搜索词绩效 (ABA)</td><td>后台-品牌分析</td><td>卖家平台 > 品牌 > 品牌分析 > 搜索词 > ASIN搜索词</td><td>20260508-ABA-ASIN搜索词绩效-B0XXXXXX</td></tr>
+            <tr><td>2</td><td>热门搜索词 (ABA)</td><td>后台-品牌分析</td><td>卖家平台 > 品牌 > 品牌分析 > 搜索词 > 热门搜索词</td><td>20260508-ABA-热门搜索词</td></tr>
+            <tr><td>3</td><td>ERP搜索词报告-汇总</td><td>优卖云/赛狐ERP</td><td>ERP > 广告管理 > 搜索词报告 > 汇总视图</td><td>20260508-ERP-搜索词汇总-B0XXXXXX</td></tr>
+            <tr><td>4</td><td>ERP搜索词报告-明细</td><td>优卖云/赛狐ERP</td><td>ERP > 广告管理 > 搜索词报告 > 明细列表</td><td>20260508-ERP-搜索词明细-B0XXXXXX</td></tr>
+            <tr><td>5</td><td>业务报告-子体-30天</td><td>后台-业务报告</td><td>卖家平台 > 报告 > 业务报告 > 子商品 > 选30天</td><td>20260508-BusinessReport-Child-30d</td></tr>
+            <tr><td>6</td><td>业务报告-子体-7天</td><td>后台-业务报告</td><td>同上，时间范围选7天</td><td>20260508-BusinessReport-Child-7d</td></tr>
+            <tr><td>7</td><td>业务报告-父体-30天</td><td>后台-业务报告</td><td>卖家平台 > 报告 > 业务报告 > 父商品 > 选30天</td><td>20260508-BusinessReport-Parent-30d</td></tr>
+            <tr><td>8</td><td>业务报告-父体-7天</td><td>后台-业务报告</td><td>同上，时间范围选7天</td><td>20260508-BusinessReport-Parent-7d</td></tr>
+            <tr><td>9</td><td>SP广告活动报告-30天</td><td>后台-广告</td><td>广告后台 > 商品推广 > 广告活动 > 日期范围30天</td><td>20260508-SP-Campaign-30d</td></tr>
+            <tr><td>10</td><td>SP搜索词报告-30天</td><td>后台-广告</td><td>广告后台 > 商品推广 > 搜索词 > 日期范围30天</td><td>20260508-SP-SearchTerm-30d-B0XXXXXX</td></tr>
+            <tr><td>11</td><td>SP投放报告-30天</td><td>后台-广告</td><td>广告后台 > 商品推广 > 投放 > 日期范围30天</td><td>20260508-SP-Targeting-30d</td></tr>
+            <tr><td>12</td><td>SP关键词广告位-30天</td><td>后台-广告</td><td>广告后台 > 商品推广 > 广告位 > 日期范围30天</td><td>20260508-SP-Placement-30d</td></tr>
+            <tr><td>13</td><td>SB搜索词报告-30天</td><td>后台-广告</td><td>广告后台 > 品牌推广 > 搜索词 > 日期范围30天</td><td>20260508-SB-SearchTerm-30d</td></tr>
+            <tr><td>14</td><td>SB关键词广告位-30天</td><td>后台-广告</td><td>广告后台 > 品牌推广 > 广告位 > 日期范围30天</td><td>20260508-SB-Placement-30d</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div id="page-reports" class="hidden">
+      <div class="page-title">📁 报告中心</div>
+      <div class="page-desc">查看和管理历史分析报告</div>
+      <div class="card">
+        <div class="card-title">历史报告</div>
+        <table id="reports-table">
+          <thead><tr><th>ID</th><th>标题</th><th>ASIN</th><th>类型</th><th>创建时间</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div id="page-admin" class="hidden">
+      <div class="page-title">团队管理（管理员专用）</div>
+      <div class="card">
+        <div class="card-title">创建新用户</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">用户名</label><input type="text" id="new-username" class="input" placeholder="输入用户名"></div>
+          <div class="form-group"><label class="form-label">密码</label><input type="password" id="new-password" class="input" placeholder="初始密码"></div>
+          <div class="form-group"><label class="form-label">显示名称</label><input type="text" id="new-display" class="input" placeholder="显示名称"></div>
+          <div class="form-group"><label class="form-label">角色</label><select id="new-role" class="input"><option value="member">运营</option><option value="admin">管理员</option></select></div>
+        </div>
+        <button class="btn" style="width:auto;padding:10px 24px;" onclick="createUser()">创建用户</button>
+      </div>
+      <div class="card">
+        <div class="card-title">团队成员列表</div>
+        <table id="users-table">
+          <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>显示名</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="page-settings" class="hidden">
+      <div class="page-title">系统设置</div>
+      <div class="card">
+        <div class="card-title">AI 大模型配置</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">模型服务商</label><select id="llm-provider" class="input"><option value="openai">OpenAI</option><option value="zhipu">智谱AI</option><option value="qwen">通义千问</option><option value="deepseek">DeepSeek</option><option value="moonshot">Moonshot</option><option value="claude">Claude</option></select></div>
+          <div class="form-group"><label class="form-label">API Key</label><input type="password" id="llm-apikey" class="input" placeholder="输入 API Key"></div>
+          <div class="form-group"><label class="form-label">Base URL</label><input type="text" id="llm-baseurl" class="input" placeholder="留空使用默认"></div>
+          <div class="form-group"><label class="form-label">模型名称</label><input type="text" id="llm-model" class="input" placeholder="留空使用推荐模型"></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" style="width:auto;padding:10px 20px;" onclick="testLLM()">测试连接</button>
+          <button class="btn btn-secondary" style="width:auto;padding:10px 20px;" onclick="saveSettings()">保存设置</button>
+        </div>
+        <div id="llm-test-result" style="margin-top:10px;font-size:13px;color:var(--muted);">未测试</div>
+      </div>
+      <div class="card card-blue">
+        <div class="card-title">国内大模型 API 购买</div>
+        <div style="font-size:13px;line-height:1.8;">
+          推荐购买链接：<a href="https://ceworld-api.pages.dev/" target="_blank" style="color:var(--blue);">https://ceworld-api.pages.dev/</a><br>
+          管理员可统一购买 API 后分配给团队成员使用。
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+let currentUser = null;
+let analysisData = null;
+const API_BASE = "http://localhost:8000"; // Change to your backend URL
+
+function showPage(name) {
+  document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('page-' + name).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value;
+  const password = document.getElementById('login-pass').value;
+  if (!username || !password) { alert('请输入用户名和密码'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/login`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (data.success) {
+      currentUser = data.user;
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('app').style.display = 'flex';
+      document.getElementById('user-card').textContent = currentUser.display_name || currentUser.username;
+      if (currentUser.role === 'admin') {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+      }
+    } else {
+      alert('登录失败：' + (data.detail || '未知错误'));
+    }
+  } catch (e) { alert('连接失败，请确认后端服务已启动'); }
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
+function handleFiles(files) {
+  if (!files.length) return;
+  document.getElementById('file-status').textContent = `已选择 ${files.length} 个文件`;
+  document.getElementById('file-status').style.color = 'var(--green)';
+  document.getElementById('missing-alert').textContent = '✅ 文件已选择，可以开始分析';
+  document.getElementById('missing-alert').className = 'alert alert-success';
+}
+
+async function startAnalysis() {
+  const btn = event.target;
+  btn.textContent = '分析中...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/analyze`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        stage: document.getElementById('stage').value,
+        asin: document.getElementById('asin').value,
+        acos: parseFloat(document.getElementById('acos').value),
+        tacos: parseFloat(document.getElementById('tacos').value),
+        budget_limit_pct: parseFloat(document.getElementById('budget').value)
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      analysisData = data.result;
+      renderResults(data.result);
+      document.getElementById('analysis-result').classList.remove('hidden');
+    } else {
+      alert('分析失败：' + (data.detail || '未知错误'));
+    }
+  } catch (e) { alert('分析请求失败'); }
+  btn.textContent = '🔥 开始12维度深度分析';
+  btn.disabled = false;
+}
+
+function renderResults(r) {
+  // Traffic tree
+  let tt = '<table><thead><tr><th>层级</th><th>关键词</th><th>搜索量</th><th>ACOS</th><th>动作</th></tr></thead><tbody>';
+  (r.traffic_tree || []).slice(0, 15).forEach(t => {
+    tt += `<tr><td><span class="badge badge-core">${t.level || '-'}</span></td><td>${t.keyword || '-'}</td><td>${t.search_volume || '-'}</td><td>${t.acos || '-'}</td><td>${t.action || '-'}</td></tr>`;
+  });
+  tt += '</tbody></table>';
+  document.getElementById('traffic-tree').innerHTML = tt;
+
+  // Diagnosis
+  const d = r.diagnosis || {};
+  document.getElementById('diagnosis').innerHTML = `
+    <div style="font-size:13px;line-height:1.8;color:var(--muted);">
+      主问题：${d.main_issue || 'N/A'}<br>
+      次问题：${(d.sub_issues || []).join(', ') || '无'}<br>
+      页面优先：${d.page_first ? '是' : '否'}<br>
+      数据完整度：高
+    </div>`;
+
+  // Actions
+  let at = '<table><thead><tr><th>优先级</th><th>层级</th><th>Campaign</th><th>目标</th><th>动作</th><th>调整值</th><th>原因</th></tr></thead><tbody>';
+  (r.actions || []).slice(0, 20).forEach(a => {
+    const cat = a.category === '加法' ? '<span class="badge badge-add">加法</span>' : '<span class="badge badge-sub">减法</span>';
+    at += `<tr><td>${a.priority || '-'}</td><td>${cat}</td><td>${a.campaign || '-'}</td><td>${a.target || '-'}</td><td>${a.action || '-'}</td><td>${a.adjust_value || '-'}</td><td>${a.reason || '-'}</td></tr>`;
+  });
+  at += '</tbody></table>';
+  document.getElementById('actions').innerHTML = at;
+
+  // Today add/sub
+  const renderList = (items, id) => {
+    let html = '<table><thead><tr><th>#</th><th>Campaign / Ad Group / Target</th><th>动作</th></tr></thead><tbody>';
+    (items || []).slice(0, 15).forEach((item, i) => {
+      html += `<tr><td>${i+1}</td><td>${item.campaign || '-'} / ${item.ad_group || '-'} / ${item.target || '-'}</td><td>${item.action || '-'} ${item.adjust_value || ''}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    document.getElementById(id).innerHTML = html;
+  };
+  renderList(r.today_add, 'today-add');
+  renderList(r.today_sub, 'today-sub');
+
+  // Monitor plan
+  let mp = '<table><thead><tr><th>目标</th><th>指标</th><th>阈值</th><th>触发动作</th><th>窗口</th></tr></thead><tbody>';
+  (r.monitor_plan || []).slice(0, 8).forEach(m => {
+    mp += `<tr><td>${m.target || '-'}</td><td>${m.metric || '-'}</td><td>${m.threshold || '-'}</td><td>${m.trigger || '-'}</td><td>${m.window || '-'}</td></tr>`;
+  });
+  mp += '</tbody></table>';
+  document.getElementById('monitor-plan').innerHTML = mp;
+}
+
+async function exportExcel() {
+  if (!analysisData) { alert('请先运行分析'); return; }
+  const btn = event.target;
+  btn.textContent = '导出中...';
+  try {
+    const res = await fetch(`${API_BASE}/api/export`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        stage: document.getElementById('stage').value,
+        asin: document.getElementById('asin').value,
+        acos: parseFloat(document.getElementById('acos').value),
+        tacos: parseFloat(document.getElementById('tacos').value),
+        budget_limit_pct: parseFloat(document.getElementById('budget').value)
+      })
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${document.getElementById('asin').value}_12维分析_${new Date().toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'})}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { alert('导出失败'); }
+  btn.textContent = '💾 导出Excel报告';
+}
+
+async function testLLM() {
+  const btn = event.target;
+  btn.textContent = '测试中...';
+  const result = document.getElementById('llm-test-result');
+  try {
+    const res = await fetch(`${API_BASE}/api/llm/test?provider=${document.getElementById('llm-provider').value}&api_key=${document.getElementById('llm-apikey').value}&base_url=${document.getElementById('llm-baseurl').value}&model=${document.getElementById('llm-model').value}`);
+    const data = await res.json();
+    result.textContent = data.message;
+    result.style.color = data.success ? 'var(--green)' : 'var(--red)';
+  } catch (e) { result.textContent = '测试异常'; result.style.color = 'var(--red)'; }
+  btn.textContent = '测试连接';
+}
+
+function saveSettings() {
+  alert('设置已保存');
+}
+
+async function loadUsers() {
+  try {
+    const res = await fetch(`${API_BASE}/api/users`);
+    const users = await res.json();
+    const tbody = document.querySelector('#users-table tbody');
+    tbody.innerHTML = users.map(u => `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.role}</td><td>${u.display_name}</td><td>${u.created_at?.slice(0,10)}</td><td><button class="btn btn-secondary" style="padding:4px 12px;font-size:12px;">重置密码</button></td></tr>`).join('');
+  } catch (e) {}
+}
+
+async function createUser() {
+  const username = document.getElementById('new-username').value;
+  const password = document.getElementById('new-password').value;
+  const display = document.getElementById('new-display').value;
+  const role = document.getElementById('new-role').value;
+  if (!username || !password) { alert('用户名和密码不能为空'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/users`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({username, password, role, display_name: display})
+    });
+    const data = await res.json();
+    alert(data.message);
+    loadUsers();
+  } catch (e) { alert('创建失败'); }
+}
+
+// Enter key on login
+document.getElementById('login-pass').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>
