@@ -34,6 +34,7 @@
   .btn:hover { background: var(--accent-hover); }
   .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
   .btn-secondary:hover { background: var(--border); }
+  .btn-small { padding: 6px 14px; font-size: 12px; width: auto; }
   .watermark { text-align: center; color: #48484a; font-size: 11px; margin-top: 24px; }
 
   /* App Layout */
@@ -44,9 +45,10 @@
   .nav-item { padding: 10px 14px; border-radius: 8px; color: var(--muted); font-size: 13px; cursor: pointer; margin-bottom: 4px; transition: all .15s; }
   .nav-item:hover, .nav-item.active { background: var(--card); color: var(--text); }
   .sidebar-bottom { margin-top: auto; }
-  .user-card { background: var(--card); border-radius: 10px; padding: 10px; font-size: 13px; margin-bottom: 10px; }
+  .user-card { background: var(--card); border-radius: 10px; padding: 10px; font-size: 13px; margin-bottom: 10px; cursor: pointer; }
+  .user-card:hover { background: var(--border); }
 
-  .main { margin-left: 220px; padding: 32px; max-width: 1200px; }
+  .main { margin-left: 220px; padding: 32px; max-width: 1400px; }
   .page-title { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
   .page-desc { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
 
@@ -94,6 +96,12 @@
   .alert { background: var(--card); border-left: 4px solid var(--orange); border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 16px; }
   .alert-success { border-left-color: var(--green); }
 
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px; padding: 28px; width: 90%; max-width: 420px; border: 1px solid var(--border); }
+  .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+
   /* Responsive */
   @media (max-width: 768px) {
     .sidebar { width: 100%; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
@@ -121,13 +129,14 @@
   <aside class="sidebar">
     <div class="sidebar-logo">Leo Ads</div>
     <div class="sidebar-ver">v2.1 Web</div>
-    <div class="nav-item active" onclick="showPage('dashboard')">数据上传与分析</div>
-    <div class="nav-item" onclick="showPage('tutorial')">报表导出教程</div>
-    <div class="nav-item" onclick="showPage('reports')">报告中心</div>
-    <div class="nav-item admin-only hidden" onclick="showPage('admin')">团队管理</div>
-    <div class="nav-item" onclick="showPage('settings')">系统设置</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)">数据上传与分析</div>
+    <div class="nav-item" onclick="showPage('tutorial',this)">报表导出教程</div>
+    <div class="nav-item" onclick="showPage('reports',this)">报告中心</div>
+    <div class="nav-item admin-only hidden" onclick="showPage('admin',this)">团队管理</div>
+    <div class="nav-item admin-only hidden" onclick="showPage('logs',this)">日志中心</div>
+    <div class="nav-item" onclick="showPage('settings',this)">系统设置</div>
     <div class="sidebar-bottom">
-      <div class="user-card" id="user-card">Guest</div>
+      <div class="user-card" id="user-card" onclick="openPasswordModal()">Guest</div>
       <div class="nav-item" onclick="logout()">退出登录</div>
     </div>
     <div style="text-align:center;color:#48484a;font-size:10px;padding:8px;">by Leo Young</div>
@@ -200,7 +209,7 @@
           <div id="diagnosis"></div>
         </div>
         <div class="card">
-          <div class="card-title">12层动作表</div>
+          <div class="card-title">12层动作表（完整版）</div>
           <div id="actions"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -287,7 +296,7 @@
       <div class="card">
         <div class="card-title">历史报告</div>
         <table id="reports-table">
-          <thead><tr><th>ID</th><th>标题</th><th>ASIN</th><th>类型</th><th>创建时间</th></tr></thead>
+          <thead><tr><th>ID</th><th>标题</th><th>ASIN</th><th>操作人员</th><th>类型</th><th>创建时间</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -309,7 +318,20 @@
       <div class="card">
         <div class="card-title">团队成员列表</div>
         <table id="users-table">
-          <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>显示名</th><th>创建时间</th><th>操作</th></tr></thead>
+          <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>显示名</th><th>创建时间</th><th>分析配额</th><th>已用/剩余</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Logs -->
+    <div id="page-logs" class="hidden">
+      <div class="page-title">📋 日志中心</div>
+      <div class="page-desc">查看登录与操作日志</div>
+      <div class="card">
+        <div class="card-title">日志记录</div>
+        <table id="logs-table">
+          <thead><tr><th>时间</th><th>用户</th><th>动作</th><th>IP</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -321,7 +343,7 @@
       <div class="card">
         <div class="card-title">AI 大模型配置</div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">模型服务商</label><select id="llm-provider" class="input"><option value="openai">OpenAI</option><option value="zhipu">智谱AI</option><option value="qwen">通义千问</option><option value="deepseek">DeepSeek</option><option value="moonshot">Moonshot</option><option value="claude">Claude</option></select></div>
+          <div class="form-group"><label class="form-label">模型服务商</label><select id="llm-provider" class="input" onchange="onProviderChange()"><option value="openai">OpenAI</option><option value="claude">Claude</option><option value="zhipu">智谱AI (GLM)</option><option value="qwen">通义千问 (Aliyun)</option><option value="deepseek">DeepSeek</option><option value="moonshot">Moonshot (Kimi)</option><option value="baidu">百度文心一言</option></select></div>
           <div class="form-group"><label class="form-label">API Key</label><input type="password" id="llm-apikey" class="input" placeholder="输入 API Key"></div>
           <div class="form-group"><label class="form-label">Base URL</label><input type="text" id="llm-baseurl" class="input" placeholder="留空使用默认"></div>
           <div class="form-group"><label class="form-label">模型名称</label><input type="text" id="llm-model" class="input" placeholder="留空使用推荐模型"></div>
@@ -344,16 +366,52 @@
   </main>
 </div>
 
+<!-- Password Change Modal -->
+<div class="modal-overlay" id="password-modal">
+  <div class="modal">
+    <div class="modal-title">修改密码</div>
+    <input type="password" id="old-pass" class="input" placeholder="原密码">
+    <input type="password" id="new-pass" class="input" placeholder="新密码">
+    <input type="password" id="new-pass2" class="input" placeholder="确认新密码">
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn" style="width:auto;flex:1;" onclick="changeMyPassword()">确认修改</button>
+      <button class="btn btn-secondary" style="width:auto;flex:1;" onclick="closePasswordModal()">取消</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let currentUser = null;
 let analysisData = null;
-const API_BASE = "https://leo-ads-master-api.onrender.com"; // Render backend
+const API_BASE = "https://leo-ads-master-api.onrender.com";
 
-function showPage(name) {
-  document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden'));
+const LLM_DEFAULTS = {
+  openai: { base_url: 'https://api.openai.com/v1', model: 'gpt-4o' },
+  claude: { base_url: 'https://api.anthropic.com', model: 'claude-3-5-sonnet-20241022' },
+  zhipu: { base_url: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4' },
+  qwen: { base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-max' },
+  deepseek: { base_url: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  moonshot: { base_url: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
+  baidu: { base_url: 'https://qianfan.baidubce.com/v2', model: 'ernie-4.0-turbo-8k' }
+};
+
+function apiFetch(url, opts = {}) {
+  opts.headers = opts.headers || {};
+  if (currentUser) {
+    opts.headers['x-user-id'] = currentUser.id;
+    opts.headers['x-user-role'] = currentUser.role;
+  }
+  return fetch(url, opts);
+}
+
+function showPage(name, el) {
+  document.querySelectorAll('[id^="page-"]').forEach(e => e.classList.add('hidden'));
   document.getElementById('page-' + name).classList.remove('hidden');
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  event.target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (name === 'admin') loadUsers();
+  if (name === 'reports') loadReports();
+  if (name === 'logs') loadLogs();
 }
 
 async function doLogin() {
@@ -370,7 +428,7 @@ async function doLogin() {
       currentUser = data.user;
       document.getElementById('login-screen').classList.add('hidden');
       document.getElementById('app').style.display = 'flex';
-      document.getElementById('user-card').textContent = currentUser.display_name || currentUser.username;
+      document.getElementById('user-card').textContent = (currentUser.display_name || currentUser.username) + '（点击修改密码）';
       if (currentUser.role === 'admin') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
       }
@@ -384,6 +442,27 @@ function logout() {
   currentUser = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').classList.remove('hidden');
+  document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+}
+
+function openPasswordModal() { document.getElementById('password-modal').classList.add('open'); }
+function closePasswordModal() { document.getElementById('password-modal').classList.remove('open'); }
+
+async function changeMyPassword() {
+  const oldPass = document.getElementById('old-pass').value;
+  const newPass = document.getElementById('new-pass').value;
+  const newPass2 = document.getElementById('new-pass2').value;
+  if (!oldPass || !newPass) { alert('请填写完整'); return; }
+  if (newPass !== newPass2) { alert('两次新密码不一致'); return; }
+  try {
+    const res = await apiFetch(`${API_BASE}/api/users/me/password`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({old_password: oldPass, new_password: newPass})
+    });
+    const data = await res.json();
+    alert(data.message || data.detail || '未知错误');
+    if (data.success) closePasswordModal();
+  } catch (e) { alert('修改失败'); }
 }
 
 function handleFiles(files) {
@@ -399,7 +478,7 @@ async function startAnalysis() {
   btn.textContent = '分析中...';
   btn.disabled = true;
   try {
-    const res = await fetch(`${API_BASE}/api/analyze`, {
+    const res = await apiFetch(`${API_BASE}/api/analyze`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         stage: document.getElementById('stage').value,
@@ -424,9 +503,9 @@ async function startAnalysis() {
 
 function renderResults(r) {
   // Traffic tree
-  let tt = '<table><thead><tr><th>层级</th><th>关键词</th><th>搜索量</th><th>ACOS</th><th>动作</th></tr></thead><tbody>';
-  (r.traffic_tree || []).slice(0, 15).forEach(t => {
-    tt += `<tr><td><span class="badge badge-core">${t.level || '-'}</span></td><td>${t.keyword || '-'}</td><td>${t.search_volume || '-'}</td><td>${t.acos || '-'}</td><td>${t.action || '-'}</td></tr>`;
+  let tt = '<table><thead><tr><th>层级</th><th>关键词</th><th>来源</th><th>意图</th><th>搜索量</th><th>ABA排名</th><th>ACOS</th><th>动作</th><th>订单/点击</th></tr></thead><tbody>';
+  (r.traffic_tree || []).forEach(t => {
+    tt += `<tr><td><span class="badge badge-core">${t.level || '-'}</span></td><td>${t.keyword || '-'}</td><td>${t.source || '-'}</td><td>${t.intent || '-'}</td><td>${t.search_volume || '-'}</td><td>${t.aba_rank || '-'}</td><td>${t.acos || '-'}</td><td>${t.action || '-'}</td><td>${t.orders || 0} / ${t.clicks || 0}</td></tr>`;
   });
   tt += '</tbody></table>';
   document.getElementById('traffic-tree').innerHTML = tt;
@@ -435,26 +514,41 @@ function renderResults(r) {
   const d = r.diagnosis || {};
   document.getElementById('diagnosis').innerHTML = `
     <div style="font-size:13px;line-height:1.8;color:var(--muted);">
-      主问题：${d.main_issue || 'N/A'}<br>
-      次问题：${(d.sub_issues || []).join(', ') || '无'}<br>
-      页面优先：${d.page_first ? '是' : '否'}<br>
-      数据完整度：高
+      <b style="color:var(--text);">主问题：</b>${d.main_issue || 'N/A'}<br>
+      <b style="color:var(--text);">次问题：</b>${(d.sub_issues || []).join('、') || '无'}<br>
+      <b style="color:var(--text);">页面优先：</b>${d.page_first ? '是' : '否'}<br>
+      ${d.page_first_msg ? `<b style="color:var(--orange);">页面优先策略：</b>${d.page_first_msg}<br>` : ''}
+      <b style="color:var(--text);">数据完整度：</b>高
     </div>`;
 
-  // Actions
-  let at = '<table><thead><tr><th>优先级</th><th>层级</th><th>Campaign</th><th>目标</th><th>动作</th><th>调整值</th><th>原因</th></tr></thead><tbody>';
-  (r.actions || []).slice(0, 20).forEach(a => {
+  // Actions - full table with all columns
+  let at = '<table><thead><tr><th>优先级</th><th>维度层</th><th>加减法</th><th>广告类型</th><th>Campaign</th><th>广告组</th><th>目标词/ASIN</th><th>当前数据</th><th>建议动作</th><th>调整值</th><th>原因</th><th>预期影响</th><th>执行时间</th></tr></thead><tbody>';
+  (r.actions || []).forEach(a => {
     const cat = a.category === '加法' ? '<span class="badge badge-add">加法</span>' : '<span class="badge badge-sub">减法</span>';
-    at += `<tr><td>${a.priority || '-'}</td><td>${cat}</td><td>${a.campaign || '-'}</td><td>${a.target || '-'}</td><td>${a.action || '-'}</td><td>${a.adjust_value || '-'}</td><td>${a.reason || '-'}</td></tr>`;
+    at += `<tr>
+      <td>${a.priority || '-'}</td>
+      <td>${a.layer || '-'}</td>
+      <td>${cat}</td>
+      <td>${a.ad_type || '-'}</td>
+      <td>${a.campaign || '-'}</td>
+      <td>${a.ad_group || '-'}</td>
+      <td>${a.target || '-'}</td>
+      <td>${a.current_data || '-'}</td>
+      <td>${a.action || '-'}</td>
+      <td>${a.adjust_value || '-'}</td>
+      <td>${a.reason || '-'}</td>
+      <td>${a.expected_impact || '-'}</td>
+      <td>${a.exec_time || '-'}</td>
+    </tr>`;
   });
   at += '</tbody></table>';
   document.getElementById('actions').innerHTML = at;
 
   // Today add/sub
-  const renderList = (items, id) => {
-    let html = '<table><thead><tr><th>#</th><th>Campaign / Ad Group / Target</th><th>动作</th></tr></thead><tbody>';
-    (items || []).slice(0, 15).forEach((item, i) => {
-      html += `<tr><td>${i+1}</td><td>${item.campaign || '-'} / ${item.ad_group || '-'} / ${item.target || '-'}</td><td>${item.action || '-'} ${item.adjust_value || ''}</td></tr>`;
+  const renderList = (items, id, titleColor) => {
+    let html = '<table><thead><tr><th>#</th><th>维度层</th><th>Campaign</th><th>广告组</th><th>目标</th><th>动作</th><th>调整值</th><th>原因</th></tr></thead><tbody>';
+    (items || []).forEach((item, i) => {
+      html += `<tr><td>${i+1}</td><td>${item.layer || '-'}</td><td>${item.campaign || '-'}</td><td>${item.ad_group || '-'}</td><td>${item.target || '-'}</td><td>${item.action || '-'}</td><td>${item.adjust_value || ''}</td><td>${item.reason || '-'}</td></tr>`;
     });
     html += '</tbody></table>';
     document.getElementById(id).innerHTML = html;
@@ -463,8 +557,8 @@ function renderResults(r) {
   renderList(r.today_sub, 'today-sub');
 
   // Monitor plan
-  let mp = '<table><thead><tr><th>目标</th><th>指标</th><th>阈值</th><th>触发动作</th><th>窗口</th></tr></thead><tbody>';
-  (r.monitor_plan || []).slice(0, 8).forEach(m => {
+  let mp = '<table><thead><tr><th>监控目标</th><th>监控指标</th><th>阈值/Trigger</th><th>触发动作</th><th>时间窗口</th></tr></thead><tbody>';
+  (r.monitor_plan || []).forEach(m => {
     mp += `<tr><td>${m.target || '-'}</td><td>${m.metric || '-'}</td><td>${m.threshold || '-'}</td><td>${m.trigger || '-'}</td><td>${m.window || '-'}</td></tr>`;
   });
   mp += '</tbody></table>';
@@ -476,7 +570,7 @@ async function exportExcel() {
   const btn = event.target;
   btn.textContent = '导出中...';
   try {
-    const res = await fetch(`${API_BASE}/api/export`, {
+    const res = await apiFetch(`${API_BASE}/api/export`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         stage: document.getElementById('stage').value,
@@ -495,6 +589,15 @@ async function exportExcel() {
     URL.revokeObjectURL(url);
   } catch (e) { alert('导出失败'); }
   btn.textContent = '💾 导出Excel报告';
+}
+
+function onProviderChange() {
+  const provider = document.getElementById('llm-provider').value;
+  const defaults = LLM_DEFAULTS[provider];
+  if (defaults) {
+    document.getElementById('llm-baseurl').value = defaults.base_url;
+    document.getElementById('llm-model').value = defaults.model;
+  }
 }
 
 async function testLLM() {
@@ -516,11 +619,32 @@ function saveSettings() {
 
 async function loadUsers() {
   try {
-    const res = await fetch(`${API_BASE}/api/users`);
+    const res = await apiFetch(`${API_BASE}/api/users`);
     const users = await res.json();
     const tbody = document.querySelector('#users-table tbody');
-    tbody.innerHTML = users.map(u => `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.role}</td><td>${u.display_name}</td><td>${u.created_at?.slice(0,10)}</td><td><button class="btn btn-secondary" style="padding:4px 12px;font-size:12px;">重置密码</button></td></tr>`).join('');
-  } catch (e) {}
+    let html = '';
+    for (const u of users) {
+      const quotaRes = await apiFetch(`${API_BASE}/api/users/${u.id}/quota`);
+      const quota = await quotaRes.json();
+      const used = quota.analysis_count || 0;
+      const limit = quota.quota_analysis >= 0 ? quota.quota_analysis : '无限制';
+      const remain = quota.quota_analysis >= 0 ? (quota.quota_analysis - used) : '无限制';
+      html += `<tr>
+        <td>${u.id}</td>
+        <td>${u.username}</td>
+        <td>${u.role === 'admin' ? '管理员' : '运营'}</td>
+        <td>${u.display_name || '-'}</td>
+        <td>${u.created_at?.slice(0,10) || '-'}</td>
+        <td><input type="number" class="input" style="padding:6px 10px;font-size:12px;width:80px;" id="quota-${u.id}" value="${quota.quota_analysis >= 0 ? quota.quota_analysis : ''}" placeholder="无限制"></td>
+        <td>${used} / ${remain}</td>
+        <td>
+          <button class="btn btn-secondary btn-small" onclick="setQuota(${u.id})">设配额</button>
+          <button class="btn btn-secondary btn-small" onclick="resetPassword(${u.id})">重置密码</button>
+        </td>
+      </tr>`;
+    }
+    tbody.innerHTML = html;
+  } catch (e) { console.error(e); }
 }
 
 async function createUser() {
@@ -530,14 +654,78 @@ async function createUser() {
   const role = document.getElementById('new-role').value;
   if (!username || !password) { alert('用户名和密码不能为空'); return; }
   try {
-    const res = await fetch(`${API_BASE}/api/users`, {
+    const res = await apiFetch(`${API_BASE}/api/users`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({username, password, role, display_name: display})
     });
     const data = await res.json();
-    alert(data.message);
+    if (!res.ok) {
+      alert(data.detail || '创建失败');
+      return;
+    }
+    alert(data.message || '创建成功');
+    document.getElementById('new-username').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('new-display').value = '';
     loadUsers();
-  } catch (e) { alert('创建失败'); }
+  } catch (e) { alert('创建失败：' + e.message); }
+}
+
+async function resetPassword(userId) {
+  const newPass = prompt('请输入新密码：');
+  if (!newPass) return;
+  try {
+    const res = await apiFetch(`${API_BASE}/api/users/${userId}/reset-password`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({new_password: newPass})
+    });
+    const data = await res.json();
+    alert(data.message || data.detail || '操作完成');
+  } catch (e) { alert('重置失败'); }
+}
+
+async function setQuota(userId) {
+  const val = document.getElementById(`quota-${userId}`).value;
+  const quota = val === '' ? -1 : parseInt(val);
+  try {
+    const res = await apiFetch(`${API_BASE}/api/users/${userId}/quota`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({quota_analysis: quota, quota_llm: -1})
+    });
+    const data = await res.json();
+    alert(data.message || '已更新');
+    loadUsers();
+  } catch (e) { alert('设置失败'); }
+}
+
+async function loadReports() {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/reports`);
+    const reports = await res.json();
+    const tbody = document.querySelector('#reports-table tbody');
+    tbody.innerHTML = reports.map(r => `<tr>
+      <td>${r.id}</td>
+      <td>${r.title}</td>
+      <td>${r.asin || '-'}</td>
+      <td>${r.display_name || r.username || '-'}</td>
+      <td>${r.report_type}</td>
+      <td>${r.created_at?.slice(0,16).replace('T',' ') || '-'}</td>
+    </tr>`).join('');
+  } catch (e) { console.error(e); }
+}
+
+async function loadLogs() {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/logs`);
+    const logs = await res.json();
+    const tbody = document.querySelector('#logs-table tbody');
+    tbody.innerHTML = logs.map(l => `<tr>
+      <td>${l.created_at?.slice(0,16).replace('T',' ') || '-'}</td>
+      <td>${l.display_name || l.username || '-'}</td>
+      <td>${l.action === 'login_success' ? '登录成功' : l.action === 'login_failed' ? '登录失败' : l.action === 'analysis_run' ? '执行分析' : l.action}</td>
+      <td>${l.ip || '-'}</td>
+    </tr>`).join('');
+  } catch (e) { console.error(e); }
 }
 
 // Enter key on login
