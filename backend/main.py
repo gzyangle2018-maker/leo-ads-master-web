@@ -199,6 +199,15 @@ def api_set_config(key: str, value: str):
 
 # --- Health ---
 
+@app.get("/")
+def root():
+    return {"status": "ok", "service": "Leo Ads Master API", "version": "2.1"}
+
 @app.get("/api/health")
 def health():
     return {"status": "ok", "version": "2.1"}
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
