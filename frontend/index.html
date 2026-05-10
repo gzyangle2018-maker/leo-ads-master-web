@@ -35,6 +35,8 @@
   .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
   .btn-secondary:hover { background: var(--border); }
   .btn-small { padding: 6px 14px; font-size: 12px; width: auto; }
+  .btn-blue { background: var(--blue); }
+  .btn-blue:hover { background: #0066cc; }
   .watermark { text-align: center; color: #48484a; font-size: 11px; margin-top: 24px; }
 
   /* App Layout */
@@ -83,6 +85,7 @@
   .badge { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
   .badge-add { background: rgba(10,132,255,0.15); color: var(--blue); }
   .badge-sub { background: rgba(255,59,48,0.15); color: var(--red); }
+  .badge-keep { background: rgba(142,142,147,0.15); color: var(--muted); }
   .badge-core { background: rgba(255,107,107,0.15); color: var(--accent); }
 
   /* Steps */
@@ -101,12 +104,48 @@
   .modal-overlay.open { display: flex; }
   .modal { background: var(--surface); border-radius: 16px; padding: 28px; width: 90%; max-width: 420px; border: 1px solid var(--border); }
   .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+  .modal-large { max-width: 1000px; max-height: 90vh; overflow: auto; }
+
+  /* Campaign Grouping */
+  .campaign-section { margin-bottom: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .campaign-header { background: #3a3a3c; padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; transition: background .15s; user-select: none; }
+  .campaign-header:hover { background: #48484a; }
+  .campaign-toggle-icon { font-size: 12px; color: var(--muted); transition: transform .2s; display: inline-block; }
+  .campaign-toggle-icon.collapsed { transform: rotate(-90deg); }
+  .campaign-content { display: block; }
+  .campaign-content.collapsed { display: none; }
+  .campaign-content table { border-radius: 0; }
+  .campaign-content th { background: #2c2c2e; }
+  .campaign-content td { font-size: 12px; padding: 8px 10px; }
+
+  /* Time Selector */
+  .time-selector { display: flex; gap: 6px; }
+  .time-btn { padding: 6px 16px !important; font-size: 12px !important; width: auto !important; }
+  .time-btn.active { background: var(--blue); border-color: var(--blue); }
+
+  /* Snapshot / History */
+  .snapshot-metric { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .snapshot-metric:last-child { border-bottom: none; }
+  .snapshot-positive { color: var(--green); }
+  .snapshot-negative { color: var(--red); }
+  .snapshot-neutral { color: var(--muted); }
+
+  /* Traffic Detail */
+  .traffic-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px; }
+  .traffic-detail-item { background: var(--card); padding: 10px 12px; border-radius: 8px; }
+  .traffic-detail-label { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+  .traffic-detail-value { color: var(--text); font-weight: 500; }
+
+  /* Report Detail */
+  .report-detail-content { max-height: 70vh; overflow: auto; font-size: 13px; }
 
   /* Responsive */
   @media (max-width: 768px) {
     .sidebar { width: 100%; position: relative; border-right: none; border-bottom: 1px solid var(--border); }
     .main { margin-left: 0; }
     #app { flex-direction: column; }
+    .traffic-detail-grid { grid-template-columns: 1fr; }
+    .campaign-content td { font-size: 11px; padding: 6px 8px; }
   }
 </style>
 </head>
@@ -201,7 +240,10 @@
 
       <div id="analysis-result" class="hidden">
         <div class="card card-blue">
-          <div class="card-title">流量词架构</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div class="card-title" style="margin-bottom:0;">流量词架构</div>
+            <button class="btn btn-small btn-secondary" onclick="showTrafficDetailModal()">🔍 深度分析</button>
+          </div>
           <div id="traffic-tree"></div>
         </div>
         <div class="card card-orange">
@@ -226,6 +268,20 @@
           <div class="card-title">7天监控计划</div>
           <div id="monitor-plan"></div>
         </div>
+      </div>
+
+      <!-- ASIN History Tracking -->
+      <div class="card card-blue" id="history-card" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+          <div class="card-title" style="margin-bottom:0;">ASIN 历史追踪</div>
+          <div class="time-selector">
+            <button class="btn btn-small time-btn active" onclick="setTimePeriod('day',this)">日</button>
+            <button class="btn btn-small time-btn" onclick="setTimePeriod('week',this)">周</button>
+            <button class="btn btn-small time-btn" onclick="setTimePeriod('month',this)">月</button>
+            <button class="btn btn-small time-btn" onclick="setTimePeriod('year',this)">年</button>
+          </div>
+        </div>
+        <div id="snapshots-table"></div>
       </div>
     </div>
 
@@ -335,6 +391,14 @@
           <tbody></tbody>
         </table>
       </div>
+      <!-- Admin Team Reports Viewer -->
+      <div class="card admin-only hidden" style="margin-top:20px;">
+        <div class="card-title">组员报告查看</div>
+        <table id="team-reports-table">
+          <thead><tr><th>ID</th><th>标题</th><th>ASIN</th><th>操作人员</th><th>类型</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Settings -->
@@ -354,7 +418,7 @@
         </div>
         <div id="llm-test-result" style="margin-top:10px;font-size:13px;color:var(--muted);">未测试</div>
       </div>
-      <div class="card card-blue">
+      <div class="card card-blue" id="ceworld-api-card">
         <div class="card-title">国内大模型 API 购买</div>
         <div style="font-size:13px;line-height:1.8;">
           推荐购买链接：<a href="https://ceworld-api.pages.dev/" target="_blank" style="color:var(--blue);">https://ceworld-api.pages.dev/</a><br>
@@ -380,9 +444,33 @@
   </div>
 </div>
 
+<!-- Traffic Detail Modal -->
+<div class="modal-overlay" id="traffic-detail-modal">
+  <div class="modal modal-large">
+    <div class="modal-title">流量词深度分析</div>
+    <div id="traffic-detail-content"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-secondary" style="width:auto;" onclick="closeTrafficDetailModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report Detail Modal -->
+<div class="modal-overlay" id="report-detail-modal">
+  <div class="modal modal-large">
+    <div class="modal-title">报告详情</div>
+    <div id="report-detail-content" class="report-detail-content"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-secondary" style="width:auto;" onclick="closeReportDetailModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let currentUser = null;
 let analysisData = null;
+let currentTimePeriod = 'day';
+let currentSnapshots = [];
 const API_BASE = "https://leo-ads-master-api.onrender.com";
 
 const LLM_DEFAULTS = {
@@ -411,7 +499,19 @@ function showPage(name, el) {
   if (el) el.classList.add('active');
   if (name === 'admin') loadUsers();
   if (name === 'reports') loadReports();
-  if (name === 'logs') loadLogs();
+  if (name === 'logs') { loadLogs(); loadTeamReports(); }
+  if (name === 'settings') initSettingsPage();
+}
+
+function initSettingsPage() {
+  const apiCard = document.getElementById('ceworld-api-card');
+  if (apiCard) {
+    if (currentUser && currentUser.role === 'admin') {
+      apiCard.classList.remove('hidden');
+    } else {
+      apiCard.classList.add('hidden');
+    }
+  }
 }
 
 async function doLogin() {
@@ -493,6 +593,8 @@ async function startAnalysis() {
       analysisData = data.result;
       renderResults(data.result);
       document.getElementById('analysis-result').classList.remove('hidden');
+      await saveSnapshot();
+      await loadSnapshots(document.getElementById('asin').value);
     } else {
       alert('分析失败：' + (data.detail || '未知错误'));
     }
@@ -502,13 +604,7 @@ async function startAnalysis() {
 }
 
 function renderResults(r) {
-  // Traffic tree
-  let tt = '<table><thead><tr><th>层级</th><th>关键词</th><th>来源</th><th>意图</th><th>搜索量</th><th>ABA排名</th><th>ACOS</th><th>动作</th><th>订单/点击</th></tr></thead><tbody>';
-  (r.traffic_tree || []).forEach(t => {
-    tt += `<tr><td><span class="badge badge-core">${t.level || '-'}</span></td><td>${t.keyword || '-'}</td><td>${t.source || '-'}</td><td>${t.intent || '-'}</td><td>${t.search_volume || '-'}</td><td>${t.aba_rank || '-'}</td><td>${t.acos || '-'}</td><td>${t.action || '-'}</td><td>${t.orders || 0} / ${t.clicks || 0}</td></tr>`;
-  });
-  tt += '</tbody></table>';
-  document.getElementById('traffic-tree').innerHTML = tt;
+  renderTrafficTree(r.traffic_tree || []);
 
   // Diagnosis
   const d = r.diagnosis || {};
@@ -521,28 +617,7 @@ function renderResults(r) {
       <b style="color:var(--text);">数据完整度：</b>高
     </div>`;
 
-  // Actions - full table with all columns
-  let at = '<table><thead><tr><th>优先级</th><th>维度层</th><th>加减法</th><th>广告类型</th><th>Campaign</th><th>广告组</th><th>目标词/ASIN</th><th>当前数据</th><th>建议动作</th><th>调整值</th><th>原因</th><th>预期影响</th><th>执行时间</th></tr></thead><tbody>';
-  (r.actions || []).forEach(a => {
-    const cat = a.category === '加法' ? '<span class="badge badge-add">加法</span>' : '<span class="badge badge-sub">减法</span>';
-    at += `<tr>
-      <td>${a.priority || '-'}</td>
-      <td>${a.layer || '-'}</td>
-      <td>${cat}</td>
-      <td>${a.ad_type || '-'}</td>
-      <td>${a.campaign || '-'}</td>
-      <td>${a.ad_group || '-'}</td>
-      <td>${a.target || '-'}</td>
-      <td>${a.current_data || '-'}</td>
-      <td>${a.action || '-'}</td>
-      <td>${a.adjust_value || '-'}</td>
-      <td>${a.reason || '-'}</td>
-      <td>${a.expected_impact || '-'}</td>
-      <td>${a.exec_time || '-'}</td>
-    </tr>`;
-  });
-  at += '</tbody></table>';
-  document.getElementById('actions').innerHTML = at;
+  renderActionsGrouped(r.actions || []);
 
   // Today add/sub
   const renderList = (items, id, titleColor) => {
@@ -563,6 +638,183 @@ function renderResults(r) {
   });
   mp += '</tbody></table>';
   document.getElementById('monitor-plan').innerHTML = mp;
+}
+
+function renderTrafficTree(tree) {
+  let html = '<table><thead><tr><th>层级</th><th>关键词</th><th>来源Campaign</th><th>广告组</th><th>意图</th><th>搜索量</th><th>ABA排名</th><th>ACOS</th><th>动作</th><th>订单/点击</th><th>转化率</th></tr></thead><tbody>';
+  tree.forEach(t => {
+    const cr = t.conversion_rate ? (t.conversion_rate + '%') : '-';
+    html += `<tr>
+      <td><span class="badge badge-core">${t.level || '-'}</span></td>
+      <td>${t.keyword || '-'}</td>
+      <td>${t.source_campaign || t.source || '-'}</td>
+      <td>${t.ad_group || '-'}</td>
+      <td>${t.intent || '-'}</td>
+      <td>${t.search_volume || '-'}</td>
+      <td>${t.aba_rank || '-'}</td>
+      <td>${t.acos || '-'}</td>
+      <td>${t.action || '-'}</td>
+      <td>${t.orders || 0} / ${t.clicks || 0}</td>
+      <td>${cr}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('traffic-tree').innerHTML = html;
+}
+
+function showTrafficDetailModal() {
+  const tree = (analysisData && analysisData.traffic_tree) || [];
+  if (!tree.length) {
+    document.getElementById('traffic-detail-content').innerHTML = '<p style="color:var(--muted);">暂无流量词数据</p>';
+    document.getElementById('traffic-detail-modal').classList.add('open');
+    return;
+  }
+  let html = '<div style="display:grid;grid-template-columns:1fr;gap:12px;">';
+  tree.forEach((t, i) => {
+    html += `<div class="traffic-detail-item" style="border:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span class="badge badge-core">${t.level || '-'}</span>
+        <span style="color:var(--muted);font-size:11px;">#${i+1}</span>
+      </div>
+      <div class="traffic-detail-grid">
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">关键词</div>
+          <div class="traffic-detail-value">${t.keyword || '-'}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">来源Campaign</div>
+          <div class="traffic-detail-value">${t.source_campaign || t.source || '-'}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">广告组</div>
+          <div class="traffic-detail-value">${t.ad_group || '-'}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">意图</div>
+          <div class="traffic-detail-value">${t.intent || '-'}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">搜索量</div>
+          <div class="traffic-detail-value">${t.search_volume || '-'}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">ABA排名</div>
+          <div class="traffic-detail-value">${t.aba_rank || '-'}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">ACOS</div>
+          <div class="traffic-detail-value">${t.acos || '-'}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">动作</div>
+          <div class="traffic-detail-value">${t.action || '-'}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">订单 / 点击</div>
+          <div class="traffic-detail-value">${t.orders || 0} / ${t.clicks || 0}</div>
+        </div>
+        <div class="traffic-detail-item">
+          <div class="traffic-detail-label">转化率</div>
+          <div class="traffic-detail-value">${t.conversion_rate ? t.conversion_rate + '%' : '-'}</div>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  document.getElementById('traffic-detail-content').innerHTML = html;
+  document.getElementById('traffic-detail-modal').classList.add('open');
+}
+
+function closeTrafficDetailModal() {
+  document.getElementById('traffic-detail-modal').classList.remove('open');
+}
+
+function getCategoryBadge(category) {
+  if (category === '加法') return '<span class="badge badge-add">加法</span>';
+  if (category === '减法') return '<span class="badge badge-sub">减法</span>';
+  return '<span class="badge badge-keep">保持</span>';
+}
+
+function renderActionsGrouped(actions) {
+  const grouped = {};
+  actions.forEach(a => {
+    const camp = a.campaign || '(未命名Campaign)';
+    if (!grouped[camp]) grouped[camp] = [];
+    grouped[camp].push(a);
+  });
+
+  Object.keys(grouped).forEach(camp => {
+    grouped[camp].sort((a, b) => (a.priority || 99) - (b.priority || 99));
+  });
+
+  let html = '';
+  const campaigns = Object.keys(grouped);
+  campaigns.forEach((camp, idx) => {
+    const items = grouped[camp];
+    html += `<div class="campaign-section">
+      <div class="campaign-header" onclick="toggleCampaign(${idx})">
+        <span class="campaign-toggle-icon" id="toggle-icon-${idx}">▼</span>
+        <strong>${camp}</strong>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px;">(${items.length} 个动作)</span>
+      </div>
+      <div class="campaign-content" id="campaign-content-${idx}">
+        <table>
+          <thead>
+            <tr>
+              <th>优先级</th>
+              <th>维度层</th>
+              <th>加减法</th>
+              <th>广告类型</th>
+              <th>Campaign</th>
+              <th>广告组</th>
+              <th>目标词</th>
+              <th>当前数据</th>
+              <th>建议动作</th>
+              <th>调整值</th>
+              <th>原因</th>
+              <th>预期影响</th>
+              <th>执行时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(a => `
+              <tr>
+                <td>${a.priority || '-'}</td>
+                <td>${a.layer || '-'}</td>
+                <td>${getCategoryBadge(a.category)}</td>
+                <td>${a.ad_type || '-'}</td>
+                <td>${a.campaign || '-'}</td>
+                <td>${a.ad_group || '-'}</td>
+                <td>${a.target || '-'}</td>
+                <td>${a.current_data || '-'}</td>
+                <td>${a.action || '-'}</td>
+                <td>${a.adjust_value || '-'}</td>
+                <td>${a.reason || '-'}</td>
+                <td>${a.expected_impact || '-'}</td>
+                <td>${a.exec_time || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('actions').innerHTML = html;
+}
+
+function toggleCampaign(idx) {
+  const content = document.getElementById('campaign-content-' + idx);
+  const icon = document.getElementById('toggle-icon-' + idx);
+  if (content.classList.contains('collapsed')) {
+    content.classList.remove('collapsed');
+    icon.classList.remove('collapsed');
+    icon.textContent = '▼';
+  } else {
+    content.classList.add('collapsed');
+    icon.classList.add('collapsed');
+    icon.textContent = '▼';
+  }
 }
 
 async function exportExcel() {
@@ -617,6 +869,182 @@ function saveSettings() {
   alert('设置已保存');
 }
 
+/* === Time Dimension Tracking === */
+function setTimePeriod(period, btn) {
+  currentTimePeriod = period;
+  document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const asin = document.getElementById('asin').value;
+  if (asin) loadSnapshots(asin);
+}
+
+async function saveSnapshot() {
+  const asin = document.getElementById('asin').value;
+  if (!asin || !analysisData) return;
+  try {
+    await apiFetch(`${API_BASE}/api/snapshots`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        asin: asin,
+        stage: document.getElementById('stage').value,
+        period: currentTimePeriod,
+        metrics: {
+          acos: parseFloat(document.getElementById('acos').value),
+          tacos: parseFloat(document.getElementById('tacos').value),
+          budget: parseFloat(document.getElementById('budget').value)
+        },
+        snapshot_data: analysisData
+      })
+    });
+  } catch (e) { console.error('保存快照失败', e); }
+}
+
+async function loadSnapshots(asin) {
+  if (!asin) return;
+  try {
+    const res = await apiFetch(`${API_BASE}/api/snapshots?asin=${encodeURIComponent(asin)}&period=${currentTimePeriod}`);
+    const data = await res.json();
+    currentSnapshots = data.snapshots || [];
+    renderSnapshots();
+  } catch (e) { console.error('加载快照失败', e); }
+}
+
+function renderSnapshots() {
+  const container = document.getElementById('snapshots-table');
+  const card = document.getElementById('history-card');
+  if (!currentSnapshots.length) {
+    card.style.display = 'block';
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;">暂无历史快照数据，运行分析后将自动保存。</p>';
+    return;
+  }
+  card.style.display = 'block';
+
+  let html = '<table><thead><tr><th>日期</th><th>ASIN</th><th>阶段</th><th>目标ACOS</th><th>目标TACOS</th><th>预算上限</th><th>环比变化</th></tr></thead><tbody>';
+
+  currentSnapshots.forEach((snap, i) => {
+    const prev = currentSnapshots[i + 1];
+    let changeHtml = '<span class="snapshot-neutral">-</span>';
+    if (prev) {
+      const curAcos = snap.metrics?.acos || 0;
+      const prevAcos = prev.metrics?.acos || 0;
+      if (prevAcos > 0) {
+        const diff = ((curAcos - prevAcos) / prevAcos * 100).toFixed(1);
+        if (diff > 0) changeHtml = `<span class="snapshot-negative">+${diff}% ACOS↑</span>`;
+        else if (diff < 0) changeHtml = `<span class="snapshot-positive">${diff}% ACOS↓</span>`;
+        else changeHtml = '<span class="snapshot-neutral">0%</span>';
+      }
+    }
+
+    const dateStr = snap.created_at ? snap.created_at.slice(0,16).replace('T',' ') : '-';
+    html += `<tr>
+      <td>${dateStr}</td>
+      <td>${snap.asin || '-'}</td>
+      <td>${snap.stage || '-'}</td>
+      <td>${snap.metrics?.acos != null ? snap.metrics.acos + '%' : '-'}</td>
+      <td>${snap.metrics?.tacos != null ? snap.metrics.tacos + '%' : '-'}</td>
+      <td>${snap.metrics?.budget != null ? snap.metrics.budget + '%' : '-'}</td>
+      <td>${changeHtml}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+/* === Admin Report Viewer === */
+async function loadTeamReports() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  try {
+    const res = await apiFetch(`${API_BASE}/api/reports/all`);
+    const data = await res.json();
+    const reports = data.reports || [];
+    const tbody = document.querySelector('#team-reports-table tbody');
+    if (!reports.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">暂无组员报告</td></tr>';
+      return;
+    }
+    tbody.innerHTML = reports.map(r => `<tr>
+      <td>${r.id}</td>
+      <td>${r.title || '-'}</td>
+      <td>${r.asin || '-'}</td>
+      <td>${r.display_name || r.username || '-'}</td>
+      <td>${r.report_type || '-'}</td>
+      <td>${r.created_at?.slice(0,16).replace('T',' ') || '-'}</td>
+      <td>
+        <button class="btn btn-small btn-secondary" onclick="showReportDetail(${r.id})">查看详情</button>
+        <button class="btn btn-small btn-secondary" onclick="downloadReport(${r.id}, '${r.title || 'report'}')" style="margin-left:6px;">下载</button>
+      </td>
+    </tr>`).join('');
+  } catch (e) { console.error('加载组员报告失败', e); }
+}
+
+async function showReportDetail(reportId) {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/reports/${reportId}`);
+    const data = await res.json();
+    const report = data.report || data;
+    const result = report.result_data || report.analysis_data || {};
+
+    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">';
+    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">ASIN</div><div class="traffic-detail-value">${report.asin || '-'}</div></div>`;
+    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">阶段</div><div class="traffic-detail-value">${report.stage || '-'}</div></div>`;
+    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">目标ACOS</div><div class="traffic-detail-value">${report.target_acos || '-'}</div></div>`;
+    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">目标TACOS</div><div class="traffic-detail-value">${report.target_tacos || '-'}</div></div>`;
+    html += '</div>';
+
+    if (result.diagnosis) {
+      const d = result.diagnosis;
+      html += '<div class="card" style="margin-bottom:16px;"><div class="card-title">核心诊断</div>';
+      html += `<div style="font-size:13px;line-height:1.8;color:var(--muted);">
+        <b style="color:var(--text);">主问题：</b>${d.main_issue || 'N/A'}<br>
+        <b style="color:var(--text);">次问题：</b>${(d.sub_issues || []).join('、') || '无'}<br>
+        <b style="color:var(--text);">页面优先：</b>${d.page_first ? '是' : '否'}
+      </div></div>`;
+    }
+
+    if (result.actions && result.actions.length) {
+      html += '<div class="card" style="margin-bottom:16px;"><div class="card-title">12层动作表</div>';
+      html += '<table><thead><tr><th>优先级</th><th>维度层</th><th>加减法</th><th>广告类型</th><th>Campaign</th><th>广告组</th><th>目标词</th><th>建议动作</th><th>调整值</th><th>原因</th></tr></thead><tbody>';
+      result.actions.forEach(a => {
+        html += `<tr>
+          <td>${a.priority || '-'}</td>
+          <td>${a.layer || '-'}</td>
+          <td>${getCategoryBadge(a.category)}</td>
+          <td>${a.ad_type || '-'}</td>
+          <td>${a.campaign || '-'}</td>
+          <td>${a.ad_group || '-'}</td>
+          <td>${a.target || '-'}</td>
+          <td>${a.action || '-'}</td>
+          <td>${a.adjust_value || '-'}</td>
+          <td>${a.reason || '-'}</td>
+        </tr>`;
+      });
+      html += '</tbody></table></div>';
+    }
+
+    document.getElementById('report-detail-content').innerHTML = html;
+    document.getElementById('report-detail-modal').classList.add('open');
+  } catch (e) { alert('加载报告详情失败'); }
+}
+
+function closeReportDetailModal() {
+  document.getElementById('report-detail-modal').classList.remove('open');
+}
+
+async function downloadReport(reportId, title) {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/reports/${reportId}/download`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title}_${new Date().toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'})}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { alert('下载失败'); }
+}
+
+/* === User Management === */
 async function loadUsers() {
   try {
     const res = await apiFetch(`${API_BASE}/api/users`);
