@@ -113,6 +113,20 @@ class Database:
             )
         ''')
 
+        # ASIN time-series snapshots
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS asin_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                asin TEXT NOT NULL,
+                dimension TEXT NOT NULL,
+                snapshot_date TEXT NOT NULL,
+                metrics_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+
         # Create default admin if not exists
         cursor.execute("SELECT id FROM users WHERE role='admin' LIMIT 1")
         if not cursor.fetchone():
@@ -509,3 +523,67 @@ class Database:
             }
             for r in rows
         ]
+
+    def get_report_detail(self, report_id: int) -> Optional[Dict]:
+        conn = self._connect()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT r.id, r.user_id, r.title, r.asin, r.report_type, r.data_summary,
+                   r.result_json, r.excel_path, r.created_at,
+                   u.username, u.display_name
+            FROM reports r JOIN users u ON r.user_id = u.id
+            WHERE r.id = ?
+        ''', (report_id,))
+        row = cursor.fetchone()
+        conn.close()
+        if not row:
+            return None
+        return {
+            'id': row[0], 'user_id': row[1], 'title': row[2], 'asin': row[3],
+            'report_type': row[4], 'data_summary': row[5],
+            'result_json': row[6], 'excel_path': row[7], 'created_at': row[8],
+            'username': row[9], 'display_name': row[10]
+        }
+
+    # --- ASIN Snapshots ---
+    def save_snapshot(self, user_id: int, asin: str, dimension: str,
+                      snapshot_date: str, metrics_json: str) -> int:
+        conn = self._connect()
+        cursor = conn.cursor()
+        now = datetime.now().isoformat()
+        cursor.execute('''
+            INSERT INTO asin_snapshots (user_id, asin, dimension, snapshot_date, metrics_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, asin, dimension, snapshot_date, metrics_json, now))
+        snapshot_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return snapshot_id
+
+    def get_snapshots(self, user_id: int, asin: str, dimension: str) -> List[Dict]:
+        conn = self._connect()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, user_id, asin, dimension, snapshot_date, metrics_json, created_at
+            FROM asin_snapshots
+            WHERE user_id = ? AND asin = ? AND dimension = ?
+            ORDER BY snapshot_date ASC
+        ''', (user_id, asin, dimension))
+        rows = cursor.fetchall()
+        conn.close()
+        return [
+            {
+                'id': r[0], 'user_id': r[1], 'asin': r[2], 'dimension': r[3],
+                'snapshot_date': r[4], 'metrics_json': r[5], 'created_at': r[6]
+            }
+            for r in rows
+        ]
+
+    def delete_snapshot(self, snapshot_id: int) -> bool:
+        conn = self._connect()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM asin_snapshots WHERE id = ?", (snapshot_id,))
+        deleted = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        return deleted
