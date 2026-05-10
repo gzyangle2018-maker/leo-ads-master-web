@@ -148,7 +148,10 @@ class AdsAnalyzerEngine:
                 'acos': f"{acos:.1f}%",
                 'action': '保持' if acos < 25 else ('优化' if acos < 40 else '否词/降竞价'),
                 'orders': camp.get('orders', 0),
-                'clicks': camp.get('clicks', 0)
+                'clicks': camp.get('clicks', 0),
+                'campaign': camp.get('campaign', ''),
+                'ad_group': camp.get('ad_group', ''),
+                'ad_type': camp.get('ad_type', 'SP')
             })
 
         level_order = {
