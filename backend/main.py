@@ -142,7 +142,7 @@ def api_set_quota(user_id: int, req: SetQuotaRequest):
 # --- Upload & Analysis ---
 
 @app.post("/api/upload")
-async def api_upload(file: UploadFile = File(...)):
+async def api_upload(file: UploadFile = File(...), request: Request = None):
     try:
         content = await file.read()
 
@@ -153,8 +153,10 @@ async def api_upload(file: UploadFile = File(...)):
         if not parsed.get('success'):
             raise HTTPException(status_code=400, detail=parsed.get('error', '解析失败'))
 
-        # 生成文件ID并存储
+        # 生成文件ID
         file_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{hashlib.md5(content).hexdigest()[:8]}"
+
+        # 保存到内存（兼容旧逻辑）
         UPLOADED_FILES[file_id] = {
             "filename": file.filename,
             "content": content,
@@ -162,12 +164,29 @@ async def api_upload(file: UploadFile = File(...)):
             "timestamp": datetime.now().isoformat()
         }
 
+        # 持久化到数据库（解决 Render 内存丢失问题）
+        user_id = request.headers.get('x-user-id') if request else None
+        db.save_uploaded_file(
+            file_id=file_id,
+            user_id=int(user_id) if user_id else None,
+            filename=file.filename,
+            report_type=parsed.get('report_type', 'unknown'),
+            confidence=parsed.get('confidence', 0),
+            raw_rows=parsed.get('raw_rows', 0),
+            rows=parsed.get('rows', 0),
+            columns=parsed.get('columns', []),
+            normalized_columns=parsed.get('normalized_columns', []),
+            data=parsed.get('data', []),
+            preview=parsed.get('preview', [])
+        )
+
         return {
             "success": True,
             "file_id": file_id,
             "filename": file.filename,
             "report_type": parsed.get('report_type', 'unknown'),
             "confidence": parsed.get('confidence', 0),
+            "raw_rows": parsed.get('raw_rows', 0),
             "rows": parsed.get('rows', 0),
             "columns": parsed.get('columns', []),
             "normalized_columns": parsed.get('normalized_columns', []),
@@ -178,6 +197,41 @@ async def api_upload(file: UploadFile = File(...)):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/uploaded-files")
+def api_list_uploaded_files(request: Request):
+    """列出当前用户已上传的文件（从数据库读取）"""
+    user_id = request.headers.get('x-user-id')
+    conn = db._connect()
+    cursor = conn.cursor()
+    if user_id:
+        cursor.execute(
+            "SELECT file_id, filename, report_type, confidence, rows, created_at FROM uploaded_files WHERE user_id = ? ORDER BY created_at DESC",
+            (int(user_id),)
+        )
+    else:
+        cursor.execute(
+            "SELECT file_id, filename, report_type, confidence, rows, created_at FROM uploaded_files ORDER BY created_at DESC LIMIT 50"
+        )
+    rows = cursor.fetchall()
+    conn.close()
+    return [
+        {
+            "file_id": r[0], "filename": r[1], "report_type": r[2],
+            "confidence": r[3], "rows": r[4], "created_at": r[5]
+        }
+        for r in rows
+    ]
+
+
+@app.delete("/api/uploaded-files/{file_id}")
+def api_delete_uploaded_file(file_id: str, request: Request):
+    """删除已上传的文件"""
+    db.delete_uploaded_file(file_id)
+    if file_id in UPLOADED_FILES:
+        del UPLOADED_FILES[file_id]
+    return {"success": True}
 
 @app.post("/api/analyze")
 def api_analyze(req: AnalysisRequest, request: Request):
@@ -194,15 +248,21 @@ def api_analyze(req: AnalysisRequest, request: Request):
         parsed_reports = []
 
         if has_uploaded_files:
-            # 使用上传的真实数据
+            # 使用上传的真实数据（优先从内存读取，否则从数据库读取）
             parser = ReportParser()
             for file_id in req.file_ids:
                 file_info = UPLOADED_FILES.get(file_id)
                 if file_info and file_info.get('parsed'):
                     parsed_reports.append(file_info['parsed'])
+                else:
+                    # 从数据库读取（Render 实例重启后内存丢失）
+                    db_file = db.get_uploaded_file(file_id)
+                    if db_file:
+                        parsed_reports.append(db_file)
 
             if parsed_reports:
                 real_campaigns = parser.extract_campaign_data(parsed_reports)
+                print(f"[analyze] Loaded {len(parsed_reports)} reports, extracted {len(real_campaigns)} campaigns")
 
         # 判断是否使用 LLM 分析
         use_llm = req.use_llm and req.llm_api_key
