@@ -51,7 +51,7 @@ class LLMClient:
         'qwen': {
             'name': '通义千问 (Aliyun)',
             'base_url': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-            'models': ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen-coder-plus'],
+            'models': ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen-coder-plus', 'qwen-long', 'qwen3-max', 'qwen3-plus', 'qwen3-turbo', 'qwq-plus'],
             'default_model': 'qwen-max',
             'key_prefix': 'sk-',
         },
