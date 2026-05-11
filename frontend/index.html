@@ -237,6 +237,19 @@
         <div class="alert" id="missing-alert">⚠️ 尚未上传任何报表，请至少上传 SP搜索词 + Campaign Summary + Business Report</div>
       </div>
 
+      <div class="card">
+        <div class="card-title">分析模式选择</div>
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
+            <input type="checkbox" id="use-llm" style="width:18px;height:18px;cursor:pointer;" onchange="toggleLLMOptions()">
+            <span>启用 LLM 智能分析（调用大模型，分析更精准但速度较慢）</span>
+          </label>
+        </div>
+        <div id="llm-options" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">LLM 配置将从「系统设置」页面读取。请先在设置页面配置好 API Key。</div>
+        </div>
+      </div>
+
       <div style="display:flex;gap:12px;margin-bottom:20px;">
         <button class="btn" style="width:auto;padding:14px 32px;" onclick="startAnalysis()">🔥 开始12维度深度分析</button>
         <button class="btn btn-secondary" style="width:auto;padding:14px 32px;" onclick="exportExcel()">💾 导出Excel报告</button>
@@ -808,13 +821,52 @@ async function changeMyPassword() {
   } catch (e) { alert('修改失败'); }
 }
 
-function handleFiles(files) {
+let uploadedFileIds = [];
+
+async function handleFiles(files) {
   if (!files.length) return;
   uploadedFiles = Array.from(files);
-  document.getElementById('file-status').textContent = `已选择 ${files.length} 个文件`;
-  document.getElementById('file-status').style.color = 'var(--green)';
-  document.getElementById('missing-alert').textContent = '✅ 文件已选择，可以开始分析';
-  document.getElementById('missing-alert').className = 'alert alert-success';
+  uploadedFileIds = [];
+  document.getElementById('file-status').textContent = `正在上传 ${files.length} 个文件...`;
+  document.getElementById('file-status').style.color = 'var(--orange)';
+
+  const formData = new FormData();
+  for (let i = 0; i < files.length; i++) {
+    formData.append('file', files[i]);
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (data.success) {
+      uploadedFileIds.push(data.file_id);
+      document.getElementById('file-status').textContent = `已上传: ${data.filename} (${data.report_type}, 置信度${(data.confidence*100).toFixed(0)}%)`;
+      document.getElementById('file-status').style.color = 'var(--green)';
+      document.getElementById('missing-alert').textContent = `✅ ${data.filename} 已解析，报表类型: ${data.report_type}, 行数: ${data.rows}`;
+      document.getElementById('missing-alert').className = 'alert alert-success';
+    } else {
+      document.getElementById('file-status').textContent = `上传失败: ${data.detail || '未知错误'}`;
+      document.getElementById('file-status').style.color = 'var(--red)';
+    }
+  } catch (e) {
+    document.getElementById('file-status').textContent = `上传异常: ${e.message}`;
+    document.getElementById('file-status').style.color = 'var(--red)';
+  }
+}
+
+function toggleLLMOptions() {
+  const checkbox = document.getElementById('use-llm');
+  const options = document.getElementById('llm-options');
+  if (checkbox && options) {
+    if (checkbox.checked) {
+      options.classList.remove('hidden');
+    } else {
+      options.classList.add('hidden');
+    }
+  }
 }
 
 function clearUploadedFiles() {
@@ -830,15 +882,30 @@ async function startAnalysis() {
   btn.textContent = '分析中...';
   btn.disabled = true;
   try {
+    // 检查是否使用 LLM
+    const useLLM = document.getElementById('use-llm')?.checked || false;
+    const llmProvider = document.getElementById('llm-provider')?.value || '';
+    const llmApiKey = document.getElementById('llm-apikey')?.value || '';
+    const llmBaseUrl = document.getElementById('llm-baseurl')?.value || '';
+    const llmModel = document.getElementById('llm-model')?.value || '';
+
+    const body = {
+      stage: document.getElementById('stage').value,
+      asin: document.getElementById('asin').value,
+      acos: parseFloat(document.getElementById('acos').value),
+      tacos: parseFloat(document.getElementById('tacos').value),
+      budget_limit_pct: parseFloat(document.getElementById('budget').value),
+      file_ids: uploadedFileIds,
+      use_llm: useLLM,
+      llm_provider: llmProvider,
+      llm_api_key: llmApiKey,
+      llm_base_url: llmBaseUrl,
+      llm_model: llmModel
+    };
+
     const res = await apiFetch(`${API_BASE}/api/analyze`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        stage: document.getElementById('stage').value,
-        asin: document.getElementById('asin').value,
-        acos: parseFloat(document.getElementById('acos').value),
-        tacos: parseFloat(document.getElementById('tacos').value),
-        budget_limit_pct: parseFloat(document.getElementById('budget').value)
-      })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
     if (data.success) {
