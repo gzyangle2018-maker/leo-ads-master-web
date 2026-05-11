@@ -127,6 +127,24 @@ class Database:
             )
         ''')
 
+        # Uploaded files (persistent storage for Render)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS uploaded_files (
+                file_id TEXT PRIMARY KEY,
+                user_id INTEGER,
+                filename TEXT NOT NULL,
+                report_type TEXT,
+                confidence REAL DEFAULT 0,
+                raw_rows INTEGER DEFAULT 0,
+                rows INTEGER DEFAULT 0,
+                columns_json TEXT,
+                normalized_columns_json TEXT,
+                data_json TEXT,
+                preview_json TEXT,
+                created_at TEXT NOT NULL
+            )
+        ''')
+
         # Create default admin if not exists
         cursor.execute("SELECT id FROM users WHERE role='admin' LIMIT 1")
         if not cursor.fetchone():
@@ -587,3 +605,55 @@ class Database:
         conn.commit()
         conn.close()
         return deleted
+
+    # --- Uploaded Files (persistent storage) ---
+    def save_uploaded_file(self, file_id: str, user_id: int, filename: str, report_type: str,
+                           confidence: float, raw_rows: int, rows: int, columns: list,
+                           normalized_columns: list, data: list, preview: list):
+        conn = self._connect()
+        cursor = conn.cursor()
+        now = datetime.now().isoformat()
+        import json
+        cursor.execute('''
+            INSERT OR REPLACE INTO uploaded_files
+            (file_id, user_id, filename, report_type, confidence, raw_rows, rows,
+             columns_json, normalized_columns_json, data_json, preview_json, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (file_id, user_id, filename, report_type, confidence, raw_rows, rows,
+              json.dumps(columns, ensure_ascii=False),
+              json.dumps(normalized_columns, ensure_ascii=False),
+              json.dumps(data, ensure_ascii=False),
+              json.dumps(preview, ensure_ascii=False), now))
+        conn.commit()
+        conn.close()
+
+    def get_uploaded_file(self, file_id: str) -> Optional[Dict]:
+        conn = self._connect()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT file_id, user_id, filename, report_type, confidence, raw_rows, rows,
+                   columns_json, normalized_columns_json, data_json, preview_json, created_at
+            FROM uploaded_files WHERE file_id = ?
+        ''', (file_id,))
+        row = cursor.fetchone()
+        conn.close()
+        if not row:
+            return None
+        import json
+        return {
+            'file_id': row[0], 'user_id': row[1], 'filename': row[2],
+            'report_type': row[3], 'confidence': row[4], 'raw_rows': row[5], 'rows': row[6],
+            'columns': json.loads(row[7]) if row[7] else [],
+            'normalized_columns': json.loads(row[8]) if row[8] else [],
+            'data': json.loads(row[9]) if row[9] else [],
+            'preview': json.loads(row[10]) if row[10] else [],
+            'created_at': row[11],
+            'success': True
+        }
+
+    def delete_uploaded_file(self, file_id: str):
+        conn = self._connect()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM uploaded_files WHERE file_id = ?", (file_id,))
+        conn.commit()
+        conn.close()
