@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,6 +19,34 @@
     --orange: #ff9f0a;
     --red: #ff3b30;
   }
+
+  html.light {
+    --bg: #f2f2f7;
+    --surface: #ffffff;
+    --card: #ffffff;
+    --border: #d1d1d6;
+    --text: #1c1c1e;
+    --muted: #6e6e73;
+    --accent: #ff3b30;
+    --accent-hover: #ff6b6b;
+    --blue: #007aff;
+    --green: #34c759;
+    --orange: #ff9500;
+    --red: #ff3b30;
+  }
+  html.light .sidebar { background: #f5f5f7; }
+  html.light .campaign-header { background: #e5e5ea; color: var(--text); }
+  html.light .campaign-header:hover { background: #d1d1d6; }
+  html.light .campaign-content th { background: #f2f2f7; }
+  html.light .watermark { color: #c7c7cc; }
+  html.light .sidebar-ver { color: #8e8e93; }
+  html.light .dropzone:hover { background: #fff0f0; }
+  html.light .login-card { background: #ffffff; }
+  html.light .modal { background: #ffffff; }
+  html.light .traffic-detail-item { background: #f2f2f7; }
+  .top-bar { position: fixed; top: 12px; right: 16px; z-index: 200; display: flex; gap: 8px; }
+  .top-bar-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; transition: all .15s; }
+  .top-bar-btn:hover { background: var(--border); }
   * { margin:0; padding:0; box-sizing:border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif; }
   body { background: var(--bg); color: var(--text); min-height: 100vh; }
   .hidden { display: none !important; }
@@ -151,14 +179,18 @@
 </head>
 <body>
 
+<div class="top-bar">
+  <button class="top-bar-btn" id="theme-toggle" onclick="toggleTheme()" title="Switch Theme">🌙</button>
+  <button class="top-bar-btn" id="lang-toggle" onclick="toggleLang()" title="Switch Language">EN</button>
+</div>
 <!-- Login -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">Leo Ads</div>
-    <div class="login-sub">Amazon Ads 12-Dimension Analysis</div>
-    <input type="text" id="login-user" class="input" placeholder="Username">
-    <input type="password" id="login-pass" class="input" placeholder="Password">
-    <button class="btn" onclick="doLogin()">Sign In</button>
+    <div class="login-sub" data-i18n="login_sub">Amazon Ads 12-Dimension Analysis</div>
+    <input type="text" id="login-user" class="input" placeholder="Username" data-i18n-placeholder="login_user_placeholder">
+    <input type="password" id="login-pass" class="input" placeholder="Password" data-i18n-placeholder="login_pass_placeholder">
+    <button class="btn" id="login-btn" onclick="doLogin()" data-i18n="login_btn">登录</button>
     <div class="watermark">by Leo Young</div>
   </div>
 </div>
@@ -168,16 +200,16 @@
   <aside class="sidebar">
     <div class="sidebar-logo">Leo Ads</div>
     <div class="sidebar-ver">v2.1 Web</div>
-    <div class="nav-item active" onclick="showPage('dashboard',this)">数据上传与分析</div>
-    <div class="nav-item" onclick="showPage('tutorial',this)">报表导出教程</div>
-    <div class="nav-item" onclick="showPage('reports',this)">报告中心</div>
-    <div class="nav-item admin-only hidden" onclick="showPage('admin',this)">团队管理</div>
-    <div class="nav-item admin-only hidden" onclick="showPage('logs',this)">日志中心</div>
-    <div class="nav-item" onclick="showPage('knowledge',this)">知识库</div>
-    <div class="nav-item" onclick="showPage('settings',this)">系统设置</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)" data-i18n="nav_dashboard">数据上传与分析</div>
+    <div class="nav-item" onclick="showPage('tutorial',this)" data-i18n="nav_tutorial">报表导出教程</div>
+    <div class="nav-item" onclick="showPage('reports',this)" data-i18n="nav_reports">报告中心</div>
+    <div class="nav-item admin-only hidden" onclick="showPage('admin',this)" data-i18n="nav_admin">团队管理</div>
+    <div class="nav-item admin-only hidden" onclick="showPage('logs',this)" data-i18n="nav_logs">日志中心</div>
+    <div class="nav-item" onclick="showPage('knowledge',this)" data-i18n="nav_knowledge">知识库</div>
+    <div class="nav-item" onclick="showPage('settings',this)" data-i18n="nav_settings">系统设置</div>
     <div class="sidebar-bottom">
       <div class="user-card" id="user-card" onclick="openPasswordModal()">Guest</div>
-      <div class="nav-item" onclick="logout()">退出登录</div>
+      <div class="nav-item" onclick="logout()" data-i18n="nav_logout">退出登录</div>
     </div>
     <div style="text-align:center;color:#48484a;font-size:10px;padding:8px;">by Leo Young</div>
   </aside>
@@ -186,14 +218,14 @@
 
     <!-- Dashboard -->
     <div id="page-dashboard">
-      <div class="page-title">广告数据上传与 12 维度深度分析</div>
-      <div class="page-desc">基于 leo-26.5.8-ads-master-skills 规则引擎，输出量化到 USD / % 的可执行方案</div>
+      <div class="page-title" data-i18n="page_dashboard_title">广告数据上传与 12 维度深度分析</div>
+      <div class="page-desc" data-i18n="page_dashboard_desc">基于 leo-26.5.8-ads-master-skills 规则引擎，输出量化到 USD / % 的可执行方案</div>
 
       <div class="card">
-        <div class="card-title">阶段策略选择</div>
+        <div class="card-title" data-i18n="card_stage">阶段策略选择</div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">当前阶段</label>
+            <label class="form-label" data-i18n="label_stage">当前阶段</label>
             <select id="stage" class="input">
               <option value="new_product">推新品（预算激进，关注数据积累）</option>
               <option value="relaunch">老品重推（平衡ACOS与单量）</option>
@@ -203,86 +235,87 @@
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">目标 ASIN</label>
+            <label class="form-label" data-i18n="label_asin">目标 ASIN</label>
             <input type="text" id="asin" class="input" placeholder="B08N5WRWNW" value="B08N5WRWNW">
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">目标 ACOS (%)</label>
+            <label class="form-label" data-i18n="label_acos">目标 ACOS (%)</label>
             <input type="number" id="acos" class="input" value="25">
           </div>
           <div class="form-group">
-            <label class="form-label">目标 TACOS (%)</label>
+            <label class="form-label" data-i18n="label_tacos">目标 TACOS (%)</label>
             <input type="number" id="tacos" class="input" value="12">
           </div>
           <div class="form-group">
-            <label class="form-label">预算上限 (%销售额)</label>
+            <label class="form-label" data-i18n="label_budget">预算上限 (%销售额)</label>
             <input type="number" id="budget" class="input" value="10">
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">数据上传</div>
+        <div class="card-title" data-i18n="card_upload">数据上传</div>
         <div class="dropzone" onclick="document.getElementById('fileInput').click()">
           <div class="dropzone-icon">📎</div>
-          <div class="dropzone-text">点击或拖拽上传 CSV / Excel 报表</div>
+          <div class="dropzone-text" data-i18n="dropzone_text">点击或拖拽上传 CSV / Excel 报表</div>
         </div>
         <input type="file" id="fileInput" class="hidden" multiple accept=".csv,.xlsx,.xls" onchange="handleFiles(this.files)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
-          <div id="file-status" style="color:var(--muted);font-size:13px;">尚未上传数据</div>
-          <button class="btn btn-small btn-secondary" onclick="clearUploadedFiles()">🗑️ 清空已上传文件</button>
+          <div id="file-status" style="color:var(--muted);font-size:13px;" data-i18n="file_status_none">尚未上传数据</div>
+          <button class="btn btn-small btn-secondary" onclick="clearUploadedFiles()" data-i18n="btn_clear_files">🗑️ 清空已上传文件</button>
         </div>
-        <div class="alert" id="missing-alert">⚠️ 尚未上传任何报表，请至少上传 SP搜索词 + Campaign Summary + Business Report</div>
+        <div class="alert" id="missing-alert" data-i18n="missing_alert">⚠️ 尚未上传任何报表，请至少上传 SP搜索词 + Campaign Summary + Business Report</div>
+        <div id="uploaded-files-list" style="margin-top:12px;"></div>
       </div>
 
       <div class="card">
-        <div class="card-title">分析模式选择</div>
+        <div class="card-title" data-i18n="card_analysis_mode">分析模式选择</div>
         <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;">
             <input type="checkbox" id="use-llm" style="width:18px;height:18px;cursor:pointer;" onchange="toggleLLMOptions()">
-            <span>启用 LLM 智能分析（调用大模型，分析更精准但速度较慢）</span>
+            <span data-i18n="llm_enable">启用 LLM 智能分析（调用大模型，分析更精准但速度较慢）</span>
           </label>
         </div>
         <div id="llm-options" class="hidden" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-          <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">LLM 配置将从「系统设置」页面读取。请先在设置页面配置好 API Key。</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:8px;" data-i18n="llm_config_hint">LLM 配置将从「系统设置」页面读取。请先在设置页面配置好 API Key。</div>
         </div>
       </div>
 
       <div style="display:flex;gap:12px;margin-bottom:20px;">
-        <button class="btn" style="width:auto;padding:14px 32px;" onclick="startAnalysis()">🔥 开始12维度深度分析</button>
-        <button class="btn btn-secondary" style="width:auto;padding:14px 32px;" onclick="exportExcel()">💾 导出Excel报告</button>
+        <button class="btn" style="width:auto;padding:14px 32px;" id="btn-start-analysis" onclick="startAnalysis()" data-i18n="btn_start_analysis">🔥 开始12维度深度分析</button>
+        <button class="btn btn-secondary" style="width:auto;padding:14px 32px;" onclick="exportExcel()" data-i18n="btn_export">💾 导出Excel报告</button>
       </div>
 
       <div id="analysis-result" class="hidden">
         <div class="card card-blue">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <div class="card-title" style="margin-bottom:0;">流量词架构</div>
-            <button class="btn btn-small btn-secondary" onclick="showTrafficDetailModal()">🔍 深度分析</button>
+            <div class="card-title" style="margin-bottom:0;" data-i18n="title_traffic">流量词架构</div>
+            <button class="btn btn-small btn-secondary" onclick="showTrafficDetailModal()" data-i18n="btn_deep_analysis">🔍 深度分析</button>
           </div>
           <div id="traffic-tree"></div>
         </div>
         <div class="card card-orange">
-          <div class="card-title">核心诊断</div>
+          <div class="card-title" data-i18n="title_diagnosis">核心诊断</div>
           <div id="diagnosis"></div>
         </div>
         <div class="card">
-          <div class="card-title">12层动作表（完整版）</div>
+          <div class="card-title" data-i18n="title_actions">12层动作表（完整版）</div>
           <div id="actions"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div class="card card-blue">
-            <div class="card-title">今日执行清单 - 加法</div>
+            <div class="card-title" data-i18n="title_today_add">今日执行清单 - 加法</div>
             <div id="today-add"></div>
           </div>
           <div class="card" style="--accent:var(--red);">
-            <div class="card-title" style="color:var(--red);">今日执行清单 - 减法</div>
+            <div class="card-title" style="color:var(--red);" data-i18n="title_today_sub">今日执行清单 - 减法</div>
             <div id="today-sub"></div>
           </div>
         </div>
         <div class="card card-green">
-          <div class="card-title">7天监控计划</div>
+          <div class="card-title" data-i18n="title_monitor">7天监控计划</div>
           <div id="monitor-plan"></div>
         </div>
       </div>
@@ -290,7 +323,7 @@
       <!-- ASIN History Tracking -->
       <div class="card card-blue" id="history-card" style="display:none;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
-          <div class="card-title" style="margin-bottom:0;">ASIN 历史追踪</div>
+          <div class="card-title" style="margin-bottom:0;" data-i18n="title_history">ASIN 历史追踪</div>
           <div class="time-selector">
             <button class="btn btn-small time-btn active" onclick="setTimePeriod('day',this)">日</button>
             <button class="btn btn-small time-btn" onclick="setTimePeriod('week',this)">周</button>
@@ -304,8 +337,8 @@
 
     <!-- Tutorial -->
     <div id="page-tutorial" class="hidden">
-      <div class="page-title">📋 报表导出完全指南</div>
-      <div class="page-desc">运营团队每次分析前，必须从亚马逊后台和ERP导出以下14张报表</div>
+      <div class="page-title" data-i18n="page_tutorial_title">📋 报表导出完全指南</div>
+      <div class="page-desc" data-i18n="page_tutorial_desc">运营团队每次分析前，必须从亚马逊后台和ERP导出以下14张报表</div>
 
       <div class="steps">
         <div class="step"><div class="step-icon">🖥️</div><div class="step-title">登录后台</div><div class="step-desc">卖家平台 / 广告后台 / ERP</div></div>
@@ -364,10 +397,10 @@
 
     <!-- Reports -->
     <div id="page-reports" class="hidden">
-      <div class="page-title">📁 报告中心</div>
-      <div class="page-desc">查看和管理历史分析报告</div>
+      <div class="page-title" data-i18n="page_reports_title">📁 报告中心</div>
+      <div class="page-desc" data-i18n="page_reports_desc">查看和管理历史分析报告</div>
       <div class="card">
-        <div class="card-title">历史报告</div>
+        <div class="card-title" data-i18n="card_history_reports">历史报告</div>
         <table id="reports-table">
           <thead><tr><th>ID</th><th>标题</th><th>ASIN</th><th>操作人员</th><th>类型</th><th>创建时间</th></tr></thead>
           <tbody></tbody>
@@ -377,19 +410,19 @@
 
     <!-- Admin -->
     <div id="page-admin" class="hidden">
-      <div class="page-title">团队管理（管理员专用）</div>
+      <div class="page-title" data-i18n="page_admin_title">团队管理（管理员专用）</div>
       <div class="card">
-        <div class="card-title">创建新用户</div>
+        <div class="card-title" data-i18n="card_create_user">创建新用户</div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">用户名</label><input type="text" id="new-username" class="input" placeholder="输入用户名"></div>
-          <div class="form-group"><label class="form-label">密码</label><input type="password" id="new-password" class="input" placeholder="初始密码"></div>
-          <div class="form-group"><label class="form-label">显示名称</label><input type="text" id="new-display" class="input" placeholder="显示名称"></div>
-          <div class="form-group"><label class="form-label">角色</label><select id="new-role" class="input"><option value="member">运营</option><option value="admin">管理员</option></select></div>
+          <div class="form-group"><label class="form-label" data-i18n="label_username">用户名</label><input type="text" id="new-username" class="input" placeholder="输入用户名"></div>
+          <div class="form-group"><label class="form-label" data-i18n="label_password">密码</label><input type="password" id="new-password" class="input" placeholder="初始密码"></div>
+          <div class="form-group"><label class="form-label" data-i18n="label_display_name">显示名称</label><input type="text" id="new-display" class="input" placeholder="显示名称"></div>
+          <div class="form-group"><label class="form-label" data-i18n="label_role">角色</label><select id="new-role" class="input"><option value="member" data-i18n="role_member">运营</option><option value="admin" data-i18n="role_admin">管理员</option></select></div>
         </div>
-        <button class="btn" style="width:auto;padding:10px 24px;" onclick="createUser()">创建用户</button>
+        <button class="btn" style="width:auto;padding:10px 24px;" onclick="createUser()" data-i18n="btn_create_user">创建用户</button>
       </div>
       <div class="card">
-        <div class="card-title">团队成员列表</div>
+        <div class="card-title" data-i18n="card_user_list">团队成员列表</div>
         <table id="users-table">
           <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>显示名</th><th>创建时间</th><th>分析配额</th><th>已用/剩余</th><th>操作</th></tr></thead>
           <tbody></tbody>
@@ -399,10 +432,10 @@
 
     <!-- Logs -->
     <div id="page-logs" class="hidden">
-      <div class="page-title">📋 日志中心</div>
-      <div class="page-desc">查看登录与操作日志</div>
+      <div class="page-title" data-i18n="page_logs_title">📋 日志中心</div>
+      <div class="page-desc" data-i18n="page_logs_desc">查看登录与操作日志</div>
       <div class="card">
-        <div class="card-title">日志记录</div>
+        <div class="card-title" data-i18n="card_logs">日志记录</div>
         <table id="logs-table">
           <thead><tr><th>时间</th><th>用户</th><th>动作</th><th>IP</th></tr></thead>
           <tbody></tbody>
@@ -410,7 +443,7 @@
       </div>
       <!-- Admin Team Reports Viewer -->
       <div class="card admin-only hidden" style="margin-top:20px;">
-        <div class="card-title">组员报告查看</div>
+        <div class="card-title" data-i18n="card_team_reports">组员报告查看</div>
         <table id="team-reports-table">
           <thead><tr><th>ID</th><th>标题</th><th>ASIN</th><th>操作人员</th><th>类型</th><th>创建时间</th><th>操作</th></tr></thead>
           <tbody></tbody>
@@ -420,38 +453,38 @@
 
     <!-- Settings -->
     <div id="page-settings" class="hidden">
-      <div class="page-title">系统设置</div>
+      <div class="page-title" data-i18n="nav_settings">系统设置</div>
       <div class="card">
-        <div class="card-title">AI 大模型配置</div>
+        <div class="card-title" data-i18n="card_llm_config">AI 大模型配置</div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">模型服务商</label><select id="llm-provider" class="input" onchange="onProviderChange()"><option value="openai">OpenAI</option><option value="claude">Claude</option><option value="gemini">Google Gemini</option><option value="grok">xAI Grok</option><option value="cohere">Cohere</option><option value="openrouter">OpenRouter</option><option value="azure">Azure OpenAI</option><option value="zhipu">智谱AI (GLM)</option><option value="qwen">通义千问 (Aliyun)</option><option value="deepseek">DeepSeek</option><option value="moonshot">Moonshot (Kimi)</option><option value="baidu">百度文心一言</option><option value="siliconflow">SiliconFlow</option></select></div>
-          <div class="form-group"><label class="form-label">API Key</label><input type="password" id="llm-apikey" class="input" placeholder="输入 API Key"></div>
-          <div class="form-group"><label class="form-label">Base URL</label><input type="text" id="llm-baseurl" class="input" placeholder="留空使用默认"></div>
-          <div class="form-group"><label class="form-label">模型名称</label><input type="text" id="llm-model" class="input" placeholder="留空使用推荐模型"></div>
+          <div class="form-group"><label class="form-label" data-i18n="label_provider">模型服务商</label><select id="llm-provider" class="input" onchange="onProviderChange()"><option value="openai">OpenAI</option><option value="claude">Claude</option><option value="gemini">Google Gemini</option><option value="grok">xAI Grok</option><option value="cohere">Cohere</option><option value="openrouter">OpenRouter</option><option value="azure">Azure OpenAI</option><option value="zhipu">智谱AI (GLM)</option><option value="qwen">通义千问 (Aliyun)</option><option value="deepseek">DeepSeek</option><option value="moonshot">Moonshot (Kimi)</option><option value="baidu">百度文心一言</option><option value="siliconflow">SiliconFlow</option></select></div>
+          <div class="form-group"><label class="form-label" data-i18n="label_api_key">API Key</label><input type="password" id="llm-apikey" class="input" placeholder="输入 API Key"></div>
+          <div class="form-group"><label class="form-label" data-i18n="label_base_url">Base URL</label><input type="text" id="llm-baseurl" class="input" placeholder="留空使用默认"></div>
+          <div class="form-group"><label class="form-label" data-i18n="label_model">模型名称</label><input type="text" id="llm-model" class="input" placeholder="留空使用推荐模型"></div>
         </div>
         <div style="display:flex;gap:10px;">
-          <button class="btn" style="width:auto;padding:10px 20px;" onclick="testLLM()">测试连接</button>
-          <button class="btn btn-secondary" style="width:auto;padding:10px 20px;" onclick="saveSettings()">保存设置</button>
+          <button class="btn" style="width:auto;padding:10px 20px;" onclick="testLLM()" data-i18n="btn_test_conn">测试连接</button>
+          <button class="btn btn-secondary" style="width:auto;padding:10px 20px;" onclick="saveSettings()" data-i18n="btn_save_settings">保存设置</button>
         </div>
         <div id="llm-test-result" style="margin-top:10px;font-size:13px;color:var(--muted);">未测试</div>
       </div>
       <div class="card card-blue" id="ceworld-api-card">
-        <div class="card-title">国内大模型 API 购买</div>
+        <div class="card-title" data-i18n="card_api_buy">国内大模型 API 购买</div>
         <div style="font-size:13px;line-height:1.8;">
           推荐购买链接：<a href="https://ceworld-api.pages.dev/" target="_blank" style="color:var(--blue);">https://ceworld-api.pages.dev/</a><br>
           管理员可统一购买 API 后分配给团队成员使用。
         </div>
       </div>
       <div class="card admin-only hidden" id="llm-provider-control">
-        <div class="card-title">API 启用状态管理（管理员）</div>
+        <div class="card-title" data-i18n="card_api_admin">API 启用状态管理（管理员）</div>
         <div id="provider-status-table" style="font-size:13px;"></div>
       </div>
     </div>
 
     <!-- Knowledge Base -->
     <div id="page-knowledge" class="hidden">
-      <div class="page-title">亚马逊广告知识库</div>
-      <div class="page-desc">基于Amazon官方文档的广告规则库、字段库、动作库</div>
+      <div class="page-title" data-i18n="page_knowledge_title">亚马逊广告知识库</div>
+      <div class="page-desc" data-i18n="page_knowledge_desc">基于Amazon官方文档的广告规则库、字段库、动作库</div>
 
       <div class="card">
         <div class="card-title">核心指标字典</div>
@@ -626,13 +659,13 @@
 <!-- Password Change Modal -->
 <div class="modal-overlay" id="password-modal">
   <div class="modal">
-    <div class="modal-title">修改密码</div>
-    <input type="password" id="old-pass" class="input" placeholder="原密码">
-    <input type="password" id="new-pass" class="input" placeholder="新密码">
-    <input type="password" id="new-pass2" class="input" placeholder="确认新密码">
+    <div class="modal-title" data-i18n="modal_change_pass">修改密码</div>
+    <input type="password" id="old-pass" class="input" placeholder="原密码" data-i18n-placeholder="old_pass_placeholder">
+    <input type="password" id="new-pass" class="input" placeholder="新密码" data-i18n-placeholder="new_pass_placeholder">
+    <input type="password" id="new-pass2" class="input" placeholder="确认新密码" data-i18n-placeholder="confirm_pass_placeholder">
     <div style="display:flex;gap:10px;margin-top:8px;">
-      <button class="btn" style="width:auto;flex:1;" onclick="changeMyPassword()">确认修改</button>
-      <button class="btn btn-secondary" style="width:auto;flex:1;" onclick="closePasswordModal()">取消</button>
+      <button class="btn" style="width:auto;flex:1;" onclick="changeMyPassword()" data-i18n="btn_confirm_change">确认修改</button>
+      <button class="btn btn-secondary" style="width:auto;flex:1;" onclick="closePasswordModal()" data-i18n="btn_cancel">取消</button>
     </div>
   </div>
 </div>
@@ -640,10 +673,10 @@
 <!-- Traffic Detail Modal -->
 <div class="modal-overlay" id="traffic-detail-modal">
   <div class="modal modal-large">
-    <div class="modal-title">流量词深度分析</div>
+    <div class="modal-title" data-i18n="modal_traffic_detail">流量词深度分析</div>
     <div id="traffic-detail-content"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
-      <button class="btn btn-secondary" style="width:auto;" onclick="closeTrafficDetailModal()">关闭</button>
+      <button class="btn btn-secondary" style="width:auto;" onclick="closeTrafficDetailModal()" data-i18n="btn_close">关闭</button>
     </div>
   </div>
 </div>
@@ -651,7 +684,7 @@
 <!-- Report Detail Modal -->
 <div class="modal-overlay" id="report-detail-modal">
   <div class="modal modal-large">
-    <div class="modal-title">报告详情</div>
+    <div class="modal-title" data-i18n="modal_report_detail">报告详情</div>
     <div id="report-detail-content" class="report-detail-content"></div>
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button class="btn btn-secondary" style="width:auto;" onclick="closeReportDetailModal()">关闭</button>
@@ -660,6 +693,392 @@
 </div>
 
 <script>
+
+// ========== i18n ==========
+const I18N = {
+  zh: {
+    login_sub: 'Amazon Ads 12-Dimension Analysis',
+    login_user_placeholder: '用户名',
+    login_pass_placeholder: '密码',
+    login_btn: '登录',
+    login_loading: '登录中...',
+    login_enter_prompt: '请输入用户名和密码',
+    login_fail: '登录失败：',
+    login_conn_fail: '连接失败，请确认后端服务已启动（Render 免费版可能需要 30-60 秒冷启动）',
+    nav_dashboard: '数据上传与分析',
+    nav_tutorial: '报表导出教程',
+    nav_reports: '报告中心',
+    nav_admin: '团队管理',
+    nav_logs: '日志中心',
+    nav_knowledge: '知识库',
+    nav_settings: '系统设置',
+    nav_logout: '退出登录',
+    guest: '访客',
+    click_change_pass: '（点击修改密码）',
+    page_dashboard_title: '广告数据上传与 12 维度深度分析',
+    page_dashboard_desc: '基于 leo-26.5.8-ads-master-skills 规则引擎，输出量化到 USD / % 的可执行方案',
+    card_stage: '阶段策略选择',
+    label_stage: '当前阶段',
+    label_asin: '目标 ASIN',
+    label_acos: '目标 ACOS (%)',
+    label_tacos: '目标 TACOS (%)',
+    label_budget: '预算上限 (%销售额)',
+    card_upload: '数据上传',
+    dropzone_text: '点击或拖拽上传 CSV / Excel 报表',
+    file_status_none: '尚未上传数据',
+    btn_clear_files: '🗑️ 清空已上传文件',
+    missing_alert: '⚠️ 尚未上传任何报表，请至少上传 SP搜索词 + Campaign Summary + Business Report',
+    card_analysis_mode: '分析模式选择',
+    llm_enable: '启用 LLM 智能分析（调用大模型，分析更精准但速度较慢）',
+    llm_config_hint: 'LLM 配置将从「系统设置」页面读取。请先在设置页面配置好 API Key。',
+    btn_start_analysis: '🔥 开始12维度深度分析',
+    btn_export: '💾 导出Excel报告',
+    title_traffic: '流量词架构',
+    btn_deep_analysis: '🔍 深度分析',
+    title_diagnosis: '核心诊断',
+    main_issue: '主问题：',
+    sub_issues: '次问题：',
+    page_first: '页面优先：',
+    page_first_msg_prefix: '页面优先策略：',
+    data_completeness: '数据完整度：',
+    title_actions: '12层动作表（完整版）',
+    title_today_add: '今日执行清单 - 加法',
+    title_today_sub: '今日执行清单 - 减法',
+    title_monitor: '7天监控计划',
+    title_history: 'ASIN 历史追踪',
+    page_tutorial_title: '📋 报表导出完全指南',
+    page_tutorial_desc: '运营团队每次分析前，必须从亚马逊后台和ERP导出以下14张报表',
+    page_reports_title: '📁 报告中心',
+    page_reports_desc: '查看和管理历史分析报告',
+    card_history_reports: '历史报告',
+    page_admin_title: '团队管理（管理员专用）',
+    card_create_user: '创建新用户',
+    label_username: '用户名',
+    label_password: '密码',
+    label_display_name: '显示名称',
+    label_role: '角色',
+    role_member: '运营',
+    role_admin: '管理员',
+    btn_create_user: '创建用户',
+    card_user_list: '团队成员列表',
+    page_logs_title: '📋 日志中心',
+    page_logs_desc: '查看登录与操作日志',
+    card_logs: '日志记录',
+    card_team_reports: '组员报告查看',
+    page_settings_title: '系统设置',
+    card_llm_config: 'AI 大模型配置',
+    label_provider: '模型服务商',
+    label_api_key: 'API Key',
+    label_base_url: 'Base URL',
+    label_model: '模型名称',
+    btn_test_conn: '测试连接',
+    btn_save_settings: '保存设置',
+    card_api_buy: '国内大模型 API 购买',
+    card_api_admin: 'API 启用状态管理（管理员）',
+    page_knowledge_title: '亚马逊广告知识库',
+    page_knowledge_desc: '基于Amazon官方文档的广告规则库、字段库、动作库',
+    modal_change_pass: '修改密码',
+    old_pass_placeholder: '原密码',
+    new_pass_placeholder: '新密码',
+    confirm_pass_placeholder: '确认新密码',
+    btn_confirm_change: '确认修改',
+    btn_cancel: '取消',
+    modal_traffic_detail: '流量词深度分析',
+    modal_report_detail: '报告详情',
+    btn_close: '关闭',
+    analysis_running: '分析中...',
+    analysis_btn_text: '🔥 开始12维度深度分析',
+    login_success: '登录成功',
+    login_error_unknown: '未知错误',
+    conn_error: '连接失败，请确认后端服务已启动',
+    please_run_analysis: '请先运行分析',
+    export_running: '导出中...',
+    export_fail: '导出失败',
+    clear_confirm: '已清空所有上传文件',
+    analysis_fail: '分析失败：',
+    analysis_req_fail: '分析请求失败',
+    upload_fail: '上传失败: ',
+    upload_error: '上传异常: ',
+    no_data: 'N/A',
+    none: '无',
+    yes: '是',
+    no: '否',
+    high: '高',
+    table_priority: '优先级',
+    table_layer: '维度层',
+    table_category: '加减法',
+    table_ad_type: '广告类型',
+    table_campaign: 'Campaign',
+    table_ad_group: '广告组',
+    table_target: '目标词',
+    table_current_data: '当前数据',
+    table_action: '建议动作',
+    table_adjust: '调整值',
+    table_reason: '原因',
+    table_expected: '预期影响',
+    table_exec_time: '执行时间',
+    table_date: '日期',
+    table_dimension: '维度',
+    table_stage: '阶段',
+    table_target_acos: '目标ACOS',
+    table_target_tacos: '目标TACOS',
+    table_budget_limit: '预算上限',
+    table_change: '环比变化',
+    monitor_target: '监控目标',
+    monitor_metric: '监控指标',
+    monitor_threshold: '阈值/Trigger',
+    monitor_trigger: '触发动作',
+    monitor_window: '时间窗口',
+    layer: '层级',
+    keyword: '关键词',
+    source_campaign: '来源Campaign',
+    intent: '意图',
+    search_volume: '搜索量',
+    aba_rank: 'ABA排名',
+    acos: 'ACOS',
+    action: '动作',
+    orders_clicks: '订单/点击',
+    conversion_rate: '转化率',
+    test_testing: '测试中...',
+    test_success: '✅ 连接成功',
+    test_fail: '❌ 连接失败',
+    test_error: '❌ 测试异常',
+    not_tested: '未测试',
+    saved: '设置已保存',
+    no_report_data: '暂无报告数据',
+    no_logs: '暂无日志',
+    no_team_reports: '暂无组员报告',
+    prompt_enter_passwords: '请填写完整',
+    prompt_password_mismatch: '两次新密码不一致',
+    password_changed: '密码已修改',
+    prompt_username_password_required: '用户名和密码不能为空',
+    prompt_enter_new_password: '请输入新密码：',
+    unit: '个动作',
+    unnamed_campaign: '(未命名Campaign)',
+    no_traffic_data: '暂无流量词数据',
+  },
+  en: {
+    login_sub: 'Amazon Ads 12-Dimension Analysis',
+    login_user_placeholder: 'Username',
+    login_pass_placeholder: 'Password',
+    login_btn: 'Sign In',
+    login_loading: 'Signing in...',
+    login_enter_prompt: 'Please enter username and password',
+    login_fail: 'Login failed: ',
+    login_conn_fail: 'Connection failed. Please ensure the backend is running (Render free tier may need 30-60s cold start)',
+    nav_dashboard: 'Upload & Analysis',
+    nav_tutorial: 'Export Guide',
+    nav_reports: 'Reports',
+    nav_admin: 'Team Management',
+    nav_logs: 'Logs',
+    nav_knowledge: 'Knowledge Base',
+    nav_settings: 'Settings',
+    nav_logout: 'Logout',
+    guest: 'Guest',
+    click_change_pass: '(Click to change password)',
+    page_dashboard_title: 'Ad Data Upload & 12-Dimension Analysis',
+    page_dashboard_desc: 'Based on leo-26.5.8 rules engine, output executable plans quantified to USD / %',
+    card_stage: 'Stage Strategy',
+    label_stage: 'Current Stage',
+    label_asin: 'Target ASIN',
+    label_acos: 'Target ACOS (%)',
+    label_tacos: 'Target TACOS (%)',
+    label_budget: 'Budget Limit (% of Sales)',
+    card_upload: 'Data Upload',
+    dropzone_text: 'Click or drag to upload CSV / Excel reports',
+    file_status_none: 'No data uploaded',
+    btn_clear_files: '🗑️ Clear Uploaded Files',
+    missing_alert: '⚠️ No reports uploaded. Please upload at least SP Search Term + Campaign Summary + Business Report',
+    card_analysis_mode: 'Analysis Mode',
+    llm_enable: 'Enable LLM Smart Analysis (calls large model, more accurate but slower)',
+    llm_config_hint: 'LLM config will be read from "Settings" page. Please configure API Key first.',
+    btn_start_analysis: '🔥 Start 12-Dimension Analysis',
+    btn_export: '💾 Export Excel Report',
+    title_traffic: 'Traffic Structure',
+    btn_deep_analysis: '🔍 Deep Analysis',
+    title_diagnosis: 'Core Diagnosis',
+    main_issue: 'Main Issue: ',
+    sub_issues: 'Sub Issues: ',
+    page_first: 'Page First: ',
+    page_first_msg_prefix: 'Page First Strategy: ',
+    data_completeness: 'Data Completeness: ',
+    title_actions: '12-Layer Action Table (Full)',
+    title_today_add: "Today's Add List",
+    title_today_sub: "Today's Subtract List",
+    title_monitor: '7-Day Monitor Plan',
+    title_history: 'ASIN History Tracking',
+    page_tutorial_title: '📋 Report Export Complete Guide',
+    page_tutorial_desc: 'Before each analysis, the ops team must export the following 14 reports from Amazon backend and ERP',
+    page_reports_title: '📁 Report Center',
+    page_reports_desc: 'View and manage historical analysis reports',
+    card_history_reports: 'Historical Reports',
+    page_admin_title: 'Team Management (Admin Only)',
+    card_create_user: 'Create New User',
+    label_username: 'Username',
+    label_password: 'Password',
+    label_display_name: 'Display Name',
+    label_role: 'Role',
+    role_member: 'Member',
+    role_admin: 'Admin',
+    btn_create_user: 'Create User',
+    card_user_list: 'Team Member List',
+    page_logs_title: '📋 Log Center',
+    page_logs_desc: 'View login and operation logs',
+    card_logs: 'Log Records',
+    card_team_reports: 'Team Reports',
+    page_settings_title: 'Settings',
+    card_llm_config: 'AI LLM Configuration',
+    label_provider: 'Provider',
+    label_api_key: 'API Key',
+    label_base_url: 'Base URL',
+    label_model: 'Model Name',
+    btn_test_conn: 'Test Connection',
+    btn_save_settings: 'Save Settings',
+    card_api_buy: 'Domestic LLM API Purchase',
+    card_api_admin: 'API Enable Status (Admin)',
+    page_knowledge_title: 'Amazon Ads Knowledge Base',
+    page_knowledge_desc: 'Ad rules, fields, and actions based on Amazon official docs',
+    modal_change_pass: 'Change Password',
+    old_pass_placeholder: 'Old Password',
+    new_pass_placeholder: 'New Password',
+    confirm_pass_placeholder: 'Confirm New Password',
+    btn_confirm_change: 'Confirm',
+    btn_cancel: 'Cancel',
+    modal_traffic_detail: 'Traffic Keyword Deep Analysis',
+    modal_report_detail: 'Report Detail',
+    btn_close: 'Close',
+    analysis_running: 'Analyzing...',
+    analysis_btn_text: '🔥 Start 12-Dimension Analysis',
+    login_success: 'Login successful',
+    login_error_unknown: 'Unknown error',
+    conn_error: 'Connection failed. Please ensure the backend is running',
+    please_run_analysis: 'Please run analysis first',
+    export_running: 'Exporting...',
+    export_fail: 'Export failed',
+    clear_confirm: 'All uploaded files cleared',
+    analysis_fail: 'Analysis failed: ',
+    analysis_req_fail: 'Analysis request failed',
+    upload_fail: 'Upload failed: ',
+    upload_error: 'Upload error: ',
+    no_data: 'N/A',
+    none: 'None',
+    yes: 'Yes',
+    no: 'No',
+    high: 'High',
+    table_priority: 'Priority',
+    table_layer: 'Layer',
+    table_category: 'Category',
+    table_ad_type: 'Ad Type',
+    table_campaign: 'Campaign',
+    table_ad_group: 'Ad Group',
+    table_target: 'Target',
+    table_current_data: 'Current Data',
+    table_action: 'Action',
+    table_adjust: 'Adjust Value',
+    table_reason: 'Reason',
+    table_expected: 'Expected Impact',
+    table_exec_time: 'Exec Time',
+    table_date: 'Date',
+    table_dimension: 'Dimension',
+    table_stage: 'Stage',
+    table_target_acos: 'Target ACOS',
+    table_target_tacos: 'Target TACOS',
+    table_budget_limit: 'Budget Limit',
+    table_change: 'MoM Change',
+    monitor_target: 'Monitor Target',
+    monitor_metric: 'Metric',
+    monitor_threshold: 'Threshold',
+    monitor_trigger: 'Trigger Action',
+    monitor_window: 'Time Window',
+    layer: 'Layer',
+    keyword: 'Keyword',
+    source_campaign: 'Source Campaign',
+    intent: 'Intent',
+    search_volume: 'Search Volume',
+    aba_rank: 'ABA Rank',
+    acos: 'ACOS',
+    action: 'Action',
+    orders_clicks: 'Orders/Clicks',
+    conversion_rate: 'CVR',
+    test_testing: 'Testing...',
+    test_success: '✅ Connection successful',
+    test_fail: '❌ Connection failed',
+    test_error: '❌ Test error',
+    not_tested: 'Not tested',
+    saved: 'Settings saved',
+    no_report_data: 'No report data',
+    no_logs: 'No logs',
+    no_team_reports: 'No team reports',
+    prompt_enter_passwords: 'Please fill in all fields',
+    prompt_password_mismatch: 'New passwords do not match',
+    password_changed: 'Password changed',
+    prompt_username_password_required: 'Username and password are required',
+    prompt_enter_new_password: 'Enter new password: ',
+    unit: ' actions',
+    unnamed_campaign: '(Unnamed Campaign)',
+    no_traffic_data: 'No traffic keyword data',
+  }
+};
+
+let currentLang = 'zh';
+
+function t(key, fallback) {
+  const val = I18N[currentLang]?.[key];
+  if (val !== undefined) return val;
+  if (fallback !== undefined) return fallback;
+  // fallback to zh
+  return I18N['zh']?.[key] ?? key;
+}
+
+function renderI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (val !== undefined) {
+      // For buttons and spans, keep child elements if any icons exist? Simplest: set textContent if no children, else find text node
+      if (el.children.length === 0) {
+        el.textContent = val;
+      } else {
+        // Preserve first child if it looks like an icon (emoji or span)
+        const first = el.firstChild;
+        if (first && first.nodeType === 3 && /^[🔥💾🗑️🔍📋📁📋]/.test(first.textContent)) {
+          el.innerHTML = first.textContent + ' ' + val;
+        } else {
+          el.textContent = val;
+        }
+      }
+    }
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const val = t(key);
+    if (val !== undefined) el.placeholder = val;
+  });
+  // Update html lang
+  document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+  // Update lang toggle button
+  const langBtn = document.getElementById('lang-toggle');
+  if (langBtn) langBtn.textContent = currentLang === 'zh' ? 'EN' : '中';
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'zh' ? 'en' : 'zh';
+  renderI18n();
+  // Re-render dynamic content if analysis data exists
+  if (analysisData) renderResults(analysisData);
+}
+
+// ========== Theme ==========
+function toggleTheme() {
+  const html = document.documentElement;
+  const isLight = html.classList.toggle('light');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+}
+
+// Initialize
+renderI18n();
+
 let currentUser = null;
 let analysisData = null;
 let currentTimePeriod = 'day';
@@ -762,36 +1181,52 @@ async function toggleProvider(provider) {
     const res = await apiFetch(`${API_BASE}/api/llm/providers/${provider}/toggle`, {method: 'POST'});
     const data = await res.json();
     if (data.success) {
-      alert('状态已更新');
+      alert('Status updated');
       loadProviderStatus();
     } else {
-      alert('更新失败: ' + (data.message || ''));
+      alert('Update failed: ' + (data.message || ''));
     }
-  } catch (e) { alert('操作失败'); }
+  } catch (e) { alert('Operation failed'); }
 }
 
 async function doLogin() {
   const username = document.getElementById('login-user').value;
   const password = document.getElementById('login-pass').value;
-  if (!username || !password) { alert('请输入用户名和密码'); return; }
+  if (!username || !password) { alert(t('login_enter_prompt')); return; }
+  const btn = document.getElementById('login-btn');
+  const originalText = btn.textContent;
+  btn.textContent = t('login_loading');
+  btn.disabled = true;
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     const res = await fetch(`${API_BASE}/api/login`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({username, password})
+      body: JSON.stringify({username, password}),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     const data = await res.json();
     if (data.success) {
       currentUser = data.user;
       document.getElementById('login-screen').classList.add('hidden');
       document.getElementById('app').style.display = 'flex';
-      document.getElementById('user-card').textContent = (currentUser.display_name || currentUser.username) + '（点击修改密码）';
+      document.getElementById('user-card').textContent = (currentUser.display_name || currentUser.username) + t('click_change_pass');
       if (currentUser.role === 'admin') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
       }
     } else {
-      alert('登录失败：' + (data.detail || '未知错误'));
+      alert(t('login_fail') + (data.detail || t('login_error_unknown')));
     }
-  } catch (e) { alert('连接失败，请确认后端服务已启动'); }
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      alert(t('login_conn_fail'));
+    } else {
+      alert(t('login_conn_fail'));
+    }
+  }
+  btn.textContent = originalText;
+  btn.disabled = false;
 }
 
 function logout() {
@@ -799,6 +1234,9 @@ function logout() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').classList.remove('hidden');
   document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+  document.getElementById('user-card').textContent = t('guest');
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
 }
 
 function openPasswordModal() { document.getElementById('password-modal').classList.add('open'); }
@@ -808,17 +1246,17 @@ async function changeMyPassword() {
   const oldPass = document.getElementById('old-pass').value;
   const newPass = document.getElementById('new-pass').value;
   const newPass2 = document.getElementById('new-pass2').value;
-  if (!oldPass || !newPass) { alert('请填写完整'); return; }
-  if (newPass !== newPass2) { alert('两次新密码不一致'); return; }
+  if (!oldPass || !newPass) { alert(t('prompt_enter_passwords')); return; }
+  if (newPass !== newPass2) { alert(t('prompt_password_mismatch')); return; }
   try {
     const res = await apiFetch(`${API_BASE}/api/users/me/password`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({old_password: oldPass, new_password: newPass})
     });
     const data = await res.json();
-    alert(data.message || data.detail || '未知错误');
+    alert(data.message || data.detail || t('login_error_unknown'));
     if (data.success) closePasswordModal();
-  } catch (e) { alert('修改失败'); }
+  } catch (e) { alert(t('password_changed')); }
 }
 
 let uploadedFileIds = [];
@@ -827,34 +1265,95 @@ async function handleFiles(files) {
   if (!files.length) return;
   uploadedFiles = Array.from(files);
   uploadedFileIds = [];
-  document.getElementById('file-status').textContent = `正在上传 ${files.length} 个文件...`;
+  document.getElementById('file-status').textContent = `Uploading ${files.length} file(s)...`;
   document.getElementById('file-status').style.color = 'var(--orange)';
 
-  const formData = new FormData();
+  const listContainer = document.getElementById('uploaded-files-list');
+  listContainer.innerHTML = '';
+
   for (let i = 0; i < files.length; i++) {
-    formData.append('file', files[i]);
+    const file = files[i];
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/upload`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success) {
+        uploadedFileIds.push(data.file_id);
+        const confidenceColor = data.confidence > 0.6 ? 'var(--green)' : data.confidence > 0.3 ? 'var(--orange)' : 'var(--red)';
+        const item = document.createElement('div');
+        item.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;';
+        item.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:600;">✅ ${data.filename}</span>
+            <span style="color:${confidenceColor};font-size:12px;">${(data.confidence*100).toFixed(0)}% match</span>
+          </div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px;">
+            Type: <b style="color:var(--text);">${data.report_type}</b> |
+            Raw rows: ${data.raw_rows} |
+            Parsed rows: ${data.rows} |
+            Columns: ${(data.normalized_columns || []).join(', ') || 'N/A'}
+          </div>
+          ${data.rows === 0 ? '<div style="color:var(--red);font-size:12px;margin-top:4px;">⚠️ No valid data rows after cleaning. Check file format.</div>' : ''}
+          <div style="margin-top:6px;">
+            <button class="btn btn-small btn-secondary" onclick="previewFile('${data.file_id}')" style="font-size:11px;padding:4px 10px;">🔍 Preview</button>
+            <button class="btn btn-small btn-secondary" onclick="removeFile('${data.file_id}', this)" style="font-size:11px;padding:4px 10px;">🗑️ Remove</button>
+          </div>
+        `;
+        listContainer.appendChild(item);
+      } else {
+        const item = document.createElement('div');
+        item.style.cssText = 'background:var(--card);border:1px solid var(--red);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:var(--red);';
+        item.textContent = `❌ ${file.name}: ${data.detail || 'Parse failed'}`;
+        listContainer.appendChild(item);
+      }
+    } catch (e) {
+      const item = document.createElement('div');
+      item.style.cssText = 'background:var(--card);border:1px solid var(--red);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:var(--red);';
+      item.textContent = `❌ ${file.name}: ${e.message}`;
+      listContainer.appendChild(item);
+    }
   }
 
-  try {
-    const res = await fetch(`${API_BASE}/api/upload`, {
-      method: 'POST',
-      body: formData
-    });
-    const data = await res.json();
-    if (data.success) {
-      uploadedFileIds.push(data.file_id);
-      document.getElementById('file-status').textContent = `已上传: ${data.filename} (${data.report_type}, 置信度${(data.confidence*100).toFixed(0)}%)`;
-      document.getElementById('file-status').style.color = 'var(--green)';
-      document.getElementById('missing-alert').textContent = `✅ ${data.filename} 已解析，报表类型: ${data.report_type}, 行数: ${data.rows}`;
-      document.getElementById('missing-alert').className = 'alert alert-success';
-    } else {
-      document.getElementById('file-status').textContent = `上传失败: ${data.detail || '未知错误'}`;
-      document.getElementById('file-status').style.color = 'var(--red)';
-    }
-  } catch (e) {
-    document.getElementById('file-status').textContent = `上传异常: ${e.message}`;
+  if (uploadedFileIds.length > 0) {
+    document.getElementById('file-status').textContent = `${uploadedFileIds.length} file(s) uploaded`;
+    document.getElementById('file-status').style.color = 'var(--green)';
+    document.getElementById('missing-alert').style.display = 'none';
+  } else {
+    document.getElementById('file-status').textContent = 'Upload failed for all files';
     document.getElementById('file-status').style.color = 'var(--red)';
   }
+}
+
+function removeFile(fileId, btn) {
+  uploadedFileIds = uploadedFileIds.filter(id => id !== fileId);
+  const item = btn.closest('div').parentElement;
+  item.remove();
+  if (uploadedFileIds.length === 0) {
+    document.getElementById('file-status').textContent = t('file_status_none');
+    document.getElementById('missing-alert').style.display = 'block';
+  }
+}
+
+async function previewFile(fileId) {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/uploaded-files`);
+    const files = await res.json();
+    const file = files.find(f => f.file_id === fileId);
+    if (!file) { alert('File not found'); return; }
+    // Show simple preview modal
+    let html = `<div style="font-size:13px;line-height:1.6;">
+      <p><b>File:</b> ${file.filename}</p>
+      <p><b>Type:</b> ${file.report_type}</p>
+      <p><b>Rows:</b> ${file.rows}</p>
+      <p><b>Confidence:</b> ${(file.confidence*100).toFixed(0)}%</p>
+    </div>`;
+    alert('Preview: ' + file.filename + '\\nType: ' + file.report_type + '\\nRows: ' + file.rows);
+  } catch (e) { alert('Preview failed'); }
 }
 
 function toggleLLMOptions() {
@@ -871,18 +1370,19 @@ function toggleLLMOptions() {
 
 function clearUploadedFiles() {
   uploadedFiles = [];
-  document.getElementById('file-status').textContent = '尚未上传数据';
+  uploadedFileIds = [];
+  document.getElementById('file-status').textContent = t('file_status_none');
   document.getElementById('missing-alert').style.display = 'block';
   document.getElementById('fileInput').value = '';
-  alert('已清空所有上传文件');
+  alert(t('clear_confirm'));
 }
 
 async function startAnalysis() {
-  const btn = event.target;
-  btn.textContent = '分析中...';
+  const btn = document.getElementById('btn-start-analysis');
+  if (!btn) return;
+  btn.textContent = t('analysis_running');
   btn.disabled = true;
   try {
-    // 检查是否使用 LLM
     const useLLM = document.getElementById('use-llm')?.checked || false;
     const llmProvider = document.getElementById('llm-provider')?.value || '';
     const llmApiKey = document.getElementById('llm-apikey')?.value || '';
@@ -915,10 +1415,10 @@ async function startAnalysis() {
       await saveSnapshot();
       await loadSnapshots(document.getElementById('asin').value);
     } else {
-      alert('分析失败：' + (data.detail || '未知错误'));
+      alert(t('analysis_fail') + (data.detail || t('login_error_unknown')));
     }
-  } catch (e) { alert('分析请求失败'); }
-  btn.textContent = '🔥 开始12维度深度分析';
+  } catch (e) { alert(t('analysis_req_fail')); }
+  btn.textContent = t('analysis_btn_text');
   btn.disabled = false;
 }
 
@@ -929,18 +1429,18 @@ function renderResults(r) {
   const d = r.diagnosis || {};
   document.getElementById('diagnosis').innerHTML = `
     <div style="font-size:13px;line-height:1.8;color:var(--muted);">
-      <b style="color:var(--text);">主问题：</b>${d.main_issue || 'N/A'}<br>
-      <b style="color:var(--text);">次问题：</b>${(d.sub_issues || []).join('、') || '无'}<br>
-      <b style="color:var(--text);">页面优先：</b>${d.page_first ? '是' : '否'}<br>
-      ${d.page_first_msg ? `<b style="color:var(--orange);">页面优先策略：</b>${d.page_first_msg}<br>` : ''}
-      <b style="color:var(--text);">数据完整度：</b>高
+      <b style="color:var(--text);">${t('main_issue')}</b>${d.main_issue || t('no_data')}<br>
+      <b style="color:var(--text);">${t('sub_issues')}</b>${(d.sub_issues || []).join(', ') || t('none')}<br>
+      <b style="color:var(--text);">${t('page_first')}</b>${d.page_first ? t('yes') : t('no')}<br>
+      ${d.page_first_msg ? `<b style="color:var(--orange);">${t('page_first_msg_prefix')}</b>${d.page_first_msg}<br>` : ''}
+      <b style="color:var(--text);">${t('data_completeness')}</b>${t('high')}
     </div>`;
 
   renderActionsGrouped(r.actions || []);
 
   // Today add/sub
   const renderList = (items, id, titleColor) => {
-    let html = '<table><thead><tr><th>#</th><th>维度层</th><th>Campaign</th><th>广告组</th><th>目标</th><th>动作</th><th>调整值</th><th>原因</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>#</th><th>' + t('table_layer') + '</th><th>Campaign</th><th>' + t('table_ad_group') + '</th><th>' + t('table_target') + '</th><th>' + t('table_action') + '</th><th>' + t('table_adjust') + '</th><th>' + t('table_reason') + '</th></tr></thead><tbody>';
     (items || []).forEach((item, i) => {
       html += `<tr><td>${i+1}</td><td>${item.layer || '-'}</td><td>${item.campaign || '-'}</td><td>${item.ad_group || '-'}</td><td>${item.target || '-'}</td><td>${item.action || '-'}</td><td>${item.adjust_value || ''}</td><td>${item.reason || '-'}</td></tr>`;
     });
@@ -951,7 +1451,7 @@ function renderResults(r) {
   renderList(r.today_sub, 'today-sub');
 
   // Monitor plan
-  let mp = '<table><thead><tr><th>监控目标</th><th>监控指标</th><th>阈值/Trigger</th><th>触发动作</th><th>时间窗口</th></tr></thead><tbody>';
+  let mp = '<table><thead><tr><th>' + t('monitor_target') + '</th><th>' + t('monitor_metric') + '</th><th>' + t('monitor_threshold') + '</th><th>' + t('monitor_trigger') + '</th><th>' + t('monitor_window') + '</th></tr></thead><tbody>';
   (r.monitor_plan || []).forEach(m => {
     mp += `<tr><td>${m.target || '-'}</td><td>${m.metric || '-'}</td><td>${m.threshold || '-'}</td><td>${m.trigger || '-'}</td><td>${m.window || '-'}</td></tr>`;
   });
@@ -960,7 +1460,7 @@ function renderResults(r) {
 }
 
 function renderTrafficTree(tree) {
-  let html = '<table><thead><tr><th>层级</th><th>关键词</th><th>来源Campaign</th><th>广告组</th><th>意图</th><th>搜索量</th><th>ABA排名</th><th>ACOS</th><th>动作</th><th>订单/点击</th><th>转化率</th></tr></thead><tbody>';
+  let html = '<table><thead><tr><th>' + t('layer') + '</th><th>' + t('keyword') + '</th><th>' + t('source_campaign') + '</th><th>' + t('table_ad_group') + '</th><th>' + t('intent') + '</th><th>' + t('search_volume') + '</th><th>' + t('aba_rank') + '</th><th>' + t('acos') + '</th><th>' + t('action') + '</th><th>' + t('orders_clicks') + '</th><th>' + t('conversion_rate') + '</th></tr></thead><tbody>';
   tree.forEach(t => {
     const cr = t.conversion_rate ? (t.conversion_rate + '%') : '-';
     html += `<tr>
@@ -984,7 +1484,7 @@ function renderTrafficTree(tree) {
 function showTrafficDetailModal() {
   const tree = (analysisData && analysisData.traffic_tree) || [];
   if (!tree.length) {
-    document.getElementById('traffic-detail-content').innerHTML = '<p style="color:var(--muted);">暂无流量词数据</p>';
+    document.getElementById('traffic-detail-content').innerHTML = '<p style="color:var(--muted);">' + t('no_traffic_data') + '</p>';
     document.getElementById('traffic-detail-modal').classList.add('open');
     return;
   }
@@ -997,43 +1497,43 @@ function showTrafficDetailModal() {
       </div>
       <div class="traffic-detail-grid">
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">关键词</div>
+          <div class="traffic-detail-label">${t('keyword')}</div>
           <div class="traffic-detail-value">${t.keyword || '-'}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">来源Campaign</div>
+          <div class="traffic-detail-label">${t('source_campaign')}</div>
           <div class="traffic-detail-value">${t.source_campaign || t.source || '-'}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">广告组</div>
+          <div class="traffic-detail-label">${t('table_ad_group')}</div>
           <div class="traffic-detail-value">${t.ad_group || '-'}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">意图</div>
+          <div class="traffic-detail-label">${t('intent')}</div>
           <div class="traffic-detail-value">${t.intent || '-'}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">搜索量</div>
+          <div class="traffic-detail-label">${t('search_volume')}</div>
           <div class="traffic-detail-value">${t.search_volume || '-'}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">ABA排名</div>
+          <div class="traffic-detail-label">${t('aba_rank')}</div>
           <div class="traffic-detail-value">${t.aba_rank || '-'}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">ACOS</div>
+          <div class="traffic-detail-label">${t('acos')}</div>
           <div class="traffic-detail-value">${t.acos || '-'}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">动作</div>
+          <div class="traffic-detail-label">${t('action')}</div>
           <div class="traffic-detail-value">${t.action || '-'}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">订单 / 点击</div>
+          <div class="traffic-detail-label">${t('orders_clicks')}</div>
           <div class="traffic-detail-value">${t.orders || 0} / ${t.clicks || 0}</div>
         </div>
         <div class="traffic-detail-item">
-          <div class="traffic-detail-label">转化率</div>
+          <div class="traffic-detail-label">${t('conversion_rate')}</div>
           <div class="traffic-detail-value">${t.conversion_rate ? t.conversion_rate + '%' : '-'}</div>
         </div>
       </div>
@@ -1049,15 +1549,15 @@ function closeTrafficDetailModal() {
 }
 
 function getCategoryBadge(category) {
-  if (category === '加法') return '<span class="badge badge-add">加法</span>';
-  if (category === '减法') return '<span class="badge badge-sub">减法</span>';
-  return '<span class="badge badge-keep">保持</span>';
+  if (category === '加法' || category === 'Add') return '<span class="badge badge-add">' + t('加法', 'Add') + '</span>';
+  if (category === '减法' || category === 'Subtract') return '<span class="badge badge-sub">' + t('减法', 'Subtract') + '</span>';
+  return '<span class="badge badge-keep">' + t('保持', 'Keep') + '</span>';
 }
 
 function renderActionsGrouped(actions) {
   const grouped = {};
   actions.forEach(a => {
-    const camp = (a.campaign || '(未命名Campaign)') + ' | ' + (a.ad_group || '-');
+    const camp = (a.campaign || t('unnamed_campaign')) + ' | ' + (a.ad_group || '-');
     if (!grouped[camp]) grouped[camp] = [];
     grouped[camp].push(a);
   });
@@ -1074,25 +1574,25 @@ function renderActionsGrouped(actions) {
       <div class="campaign-header" onclick="toggleCampaign(${idx})">
         <span class="campaign-toggle-icon" id="toggle-icon-${idx}">▼</span>
         <strong>${camp}</strong>
-        <span style="color:var(--muted);font-size:12px;margin-left:8px;">(${items.length} 个动作)</span>
+        <span style="color:var(--muted);font-size:12px;margin-left:8px;">(${items.length}${t('unit')})</span>
       </div>
       <div class="campaign-content" id="campaign-content-${idx}">
         <table>
           <thead>
             <tr>
-              <th>优先级</th>
-              <th>维度层</th>
-              <th>加减法</th>
-              <th>广告类型</th>
+              <th>${t('table_priority')}</th>
+              <th>${t('table_layer')}</th>
+              <th>${t('table_category')}</th>
+              <th>${t('table_ad_type')}</th>
               <th>Campaign</th>
-              <th>广告组</th>
-              <th>目标词</th>
-              <th>当前数据</th>
-              <th>建议动作</th>
-              <th>调整值</th>
-              <th>原因</th>
-              <th>预期影响</th>
-              <th>执行时间</th>
+              <th>${t('table_ad_group')}</th>
+              <th>${t('table_target')}</th>
+              <th>${t('table_current_data')}</th>
+              <th>${t('table_action')}</th>
+              <th>${t('table_adjust')}</th>
+              <th>${t('table_reason')}</th>
+              <th>${t('table_expected')}</th>
+              <th>${t('table_exec_time')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1137,9 +1637,9 @@ function toggleCampaign(idx) {
 }
 
 async function exportExcel() {
-  if (!analysisData) { alert('请先运行分析'); return; }
+  if (!analysisData) { alert(t('please_run_analysis')); return; }
   const btn = event.target;
-  btn.textContent = '导出中...';
+  btn.textContent = t('export_running');
   try {
     const res = await apiFetch(`${API_BASE}/api/export`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1158,8 +1658,8 @@ async function exportExcel() {
     a.download = `${document.getElementById('asin').value}_12维分析_${new Date().toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'})}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
-  } catch (e) { alert('导出失败'); }
-  btn.textContent = '💾 导出Excel报告';
+  } catch (e) { alert(t('export_fail')); }
+  btn.textContent = t('btn_export');
 }
 
 function onProviderChange() {
@@ -1174,24 +1674,24 @@ function onProviderChange() {
 async function testLLM() {
   const btn = event.target;
   const originalText = btn.textContent;
-  btn.textContent = '测试中...';
+  btn.textContent = t('test_testing');
   const result = document.getElementById('llm-test-result');
   try {
     const res = await fetch(`${API_BASE}/api/llm/test?provider=${encodeURIComponent(document.getElementById('llm-provider').value)}&api_key=${encodeURIComponent(document.getElementById('llm-apikey').value)}&base_url=${encodeURIComponent(document.getElementById('llm-baseurl').value)}&model=${encodeURIComponent(document.getElementById('llm-model').value)}`);
     const data = await res.json();
     if (data.success) {
-      result.innerHTML = `<span style="color:var(--green);font-weight:600;">✅ 连接成功</span><br><span style="color:var(--muted);font-size:12px;">${data.message || ''}</span>`;
+      result.innerHTML = `<span style="color:var(--green);font-weight:600;">${t('test_success')}</span><br><span style="color:var(--muted);font-size:12px;">${data.message || ''}</span>`;
     } else {
-      result.innerHTML = `<span style="color:var(--red);font-weight:600;">❌ 连接失败</span><br><span style="color:var(--muted);font-size:12px;">${data.message || '未知错误'}</span>`;
+      result.innerHTML = `<span style="color:var(--red);font-weight:600;">${t('test_fail')}</span><br><span style="color:var(--muted);font-size:12px;">${data.message || t('login_error_unknown')}</span>`;
     }
   } catch (e) { 
-    result.innerHTML = `<span style="color:var(--red);font-weight:600;">❌ 测试异常</span><br><span style="color:var(--muted);font-size:12px;">${e.message || '网络请求失败'}</span>`; 
+    result.innerHTML = `<span style="color:var(--red);font-weight:600;">${t('test_error')}</span><br><span style="color:var(--muted);font-size:12px;">${e.message || t('login_conn_fail')}</span>`; 
   }
   btn.textContent = originalText;
 }
 
 function saveSettings() {
-  alert('设置已保存');
+  alert(t('saved'));
 }
 
 /* === Time Dimension Tracking === */
@@ -1240,7 +1740,7 @@ function renderSnapshots() {
   const card = document.getElementById('history-card');
   if (!currentSnapshots.length) {
     card.style.display = 'block';
-    container.innerHTML = '<p style="color:var(--muted);font-size:13px;">暂无历史快照数据，运行分析后将自动保存。</p>';
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;">No historical snapshot data yet. It will be saved automatically after analysis.</p>';
     return;
   }
   card.style.display = 'block';
@@ -1257,11 +1757,12 @@ function renderSnapshots() {
   Object.keys(byAsin).forEach(asin => {
     const snaps = byAsin[asin].sort((a,b) => (a.snapshot_date||a.created_at).localeCompare(b.snapshot_date||b.created_at));
     html += `<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:12px;overflow:hidden;">
-      <div style="background:#3a3a3c;padding:10px 14px;font-weight:600;font-size:14px;">📦 ${asin} <span style="color:var(--muted);font-size:12px;font-weight:400;">(${snaps.length} 条记录)</span></div>
-      <table style="margin:0;"><thead><tr><th>日期</th><th>维度</th><th>阶段</th><th>目标ACOS</th><th>目标TACOS</th><th>预算上限</th><th>环比变化</th></tr></thead><tbody>`;
+      <div style="background:var(--border);padding:10px 14px;font-weight:600;font-size:14px;">📦 ${asin} <span style="color:var(--muted);font-size:12px;font-weight:400;">(${snaps.length} records)</span></div>
+      <table style="margin:0;"><thead><tr><th>${t('table_date')}</th><th>${t('table_dimension')}</th><th>${t('table_stage')}</th><th>${t('table_target_acos')}</th><th>${t('table_target_tacos')}</th><th>${t('table_budget_limit')}</th><th>${t('table_change')}</th></tr></thead><tbody>`;
     snaps.forEach((snap, i) => {
       const prev = snaps[i + 1];
       let changeHtml = '<span class="snapshot-neutral">-</span>';
+      // eslint-disable-next-line no-unused-vars
       let metrics = snap.metrics || {};
       // Backend stores metrics_json as string, try parse
       if (snap.metrics_json) {
@@ -1306,7 +1807,7 @@ async function loadTeamReports() {
     const reports = data.reports || [];
     const tbody = document.querySelector('#team-reports-table tbody');
     if (!reports.length) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">暂无组员报告</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);">' + t('no_team_reports') + '</td></tr>';
       return;
     }
     tbody.innerHTML = reports.map(r => `<tr>
@@ -1333,24 +1834,24 @@ async function showReportDetail(reportId) {
 
     let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">';
     html += `<div class="traffic-detail-item"><div class="traffic-detail-label">ASIN</div><div class="traffic-detail-value">${report.asin || '-'}</div></div>`;
-    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">阶段</div><div class="traffic-detail-value">${report.stage || '-'}</div></div>`;
-    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">目标ACOS</div><div class="traffic-detail-value">${report.target_acos || '-'}</div></div>`;
-    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">目标TACOS</div><div class="traffic-detail-value">${report.target_tacos || '-'}</div></div>`;
+    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">${t('label_stage')}</div><div class="traffic-detail-value">${report.stage || '-'}</div></div>`;
+    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">${t('label_acos')}</div><div class="traffic-detail-value">${report.target_acos || '-'}</div></div>`;
+    html += `<div class="traffic-detail-item"><div class="traffic-detail-label">${t('label_tacos')}</div><div class="traffic-detail-value">${report.target_tacos || '-'}</div></div>`;
     html += '</div>';
 
     if (result.diagnosis) {
       const d = result.diagnosis;
-      html += '<div class="card" style="margin-bottom:16px;"><div class="card-title">核心诊断</div>';
+      html += '<div class="card" style="margin-bottom:16px;"><div class="card-title" data-i18n="title_diagnosis">核心诊断</div>';
       html += `<div style="font-size:13px;line-height:1.8;color:var(--muted);">
-        <b style="color:var(--text);">主问题：</b>${d.main_issue || 'N/A'}<br>
-        <b style="color:var(--text);">次问题：</b>${(d.sub_issues || []).join('、') || '无'}<br>
-        <b style="color:var(--text);">页面优先：</b>${d.page_first ? '是' : '否'}
+        <b style="color:var(--text);">${t('main_issue')}</b>${d.main_issue || t('no_data')}<br>
+        <b style="color:var(--text);">${t('sub_issues')}</b>${(d.sub_issues || []).join(', ') || t('none')}<br>
+        <b style="color:var(--text);">${t('page_first')}</b>${d.page_first ? t('yes') : t('no')}
       </div></div>`;
     }
 
     if (result.actions && result.actions.length) {
-      html += '<div class="card" style="margin-bottom:16px;"><div class="card-title">12层动作表</div>';
-      html += '<table><thead><tr><th>优先级</th><th>维度层</th><th>加减法</th><th>广告类型</th><th>Campaign</th><th>广告组</th><th>目标词</th><th>建议动作</th><th>调整值</th><th>原因</th></tr></thead><tbody>';
+      html += '<div class="card" style="margin-bottom:16px;"><div class="card-title">' + t('title_actions') + '</div>';
+      html += '<table><thead><tr><th>' + t('table_priority') + '</th><th>' + t('table_layer') + '</th><th>' + t('table_category') + '</th><th>' + t('table_ad_type') + '</th><th>Campaign</th><th>' + t('table_ad_group') + '</th><th>' + t('table_target') + '</th><th>' + t('table_action') + '</th><th>' + t('table_adjust') + '</th><th>' + t('table_reason') + '</th></tr></thead><tbody>';
       result.actions.forEach(a => {
         html += `<tr>
           <td>${a.priority || '-'}</td>
@@ -1370,7 +1871,7 @@ async function showReportDetail(reportId) {
 
     document.getElementById('report-detail-content').innerHTML = html;
     document.getElementById('report-detail-modal').classList.add('open');
-  } catch (e) { alert('加载报告详情失败'); }
+  } catch (e) { alert('Failed to load report details'); }
 }
 
 function closeReportDetailModal() {
@@ -1406,7 +1907,7 @@ async function loadUsers() {
       html += `<tr>
         <td>${u.id}</td>
         <td>${u.username}</td>
-        <td>${u.role === 'admin' ? '管理员' : '运营'}</td>
+        <td>${u.role === 'admin' ? t('role_admin') : t('role_member')}</td>
         <td>${u.display_name || '-'}</td>
         <td>${u.created_at?.slice(0,10) || '-'}</td>
         <td><input type="number" class="input" style="padding:6px 10px;font-size:12px;width:80px;" id="quota-${u.id}" value="${quota.quota_analysis >= 0 ? quota.quota_analysis : ''}" placeholder="无限制"></td>
@@ -1426,7 +1927,7 @@ async function createUser() {
   const password = document.getElementById('new-password').value;
   const display = document.getElementById('new-display').value;
   const role = document.getElementById('new-role').value;
-  if (!username || !password) { alert('用户名和密码不能为空'); return; }
+  if (!username || !password) { alert(t('prompt_username_password_required')); return; }
   try {
     const res = await apiFetch(`${API_BASE}/api/users`, {
       method: 'POST', headers: {'Content-Type':'application/json'},
@@ -1434,19 +1935,19 @@ async function createUser() {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.detail || '创建失败');
+      alert(data.detail || 'Create failed');
       return;
     }
-    alert(data.message || '创建成功');
+    alert(data.message || 'Created successfully');
     document.getElementById('new-username').value = '';
     document.getElementById('new-password').value = '';
     document.getElementById('new-display').value = '';
     loadUsers();
-  } catch (e) { alert('创建失败：' + e.message); }
+  } catch (e) { alert('Create failed: ' + e.message); }
 }
 
 async function resetPassword(userId) {
-  const newPass = prompt('请输入新密码：');
+  const newPass = prompt(t('prompt_enter_new_password'));
   if (!newPass) return;
   try {
     const res = await apiFetch(`${API_BASE}/api/users/${userId}/reset-password`, {
@@ -1477,14 +1978,14 @@ async function loadReports() {
     const res = await apiFetch(`${API_BASE}/api/reports`);
     const reports = await res.json();
     const tbody = document.querySelector('#reports-table tbody');
-    tbody.innerHTML = reports.map(r => `<tr>
+    tbody.innerHTML = reports.length ? reports.map(r => `<tr>
       <td>${r.id}</td>
       <td>${r.title}</td>
       <td>${r.asin || '-'}</td>
       <td>${r.display_name || r.username || '-'}</td>
       <td>${r.report_type}</td>
       <td>${r.created_at?.slice(0,16).replace('T',' ') || '-'}</td>
-    </tr>`).join('');
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);">' + t('no_report_data') + '</td></tr>';
   } catch (e) { console.error(e); }
 }
 
@@ -1493,17 +1994,18 @@ async function loadLogs() {
     const res = await apiFetch(`${API_BASE}/api/logs`);
     const logs = await res.json();
     const tbody = document.querySelector('#logs-table tbody');
-    tbody.innerHTML = logs.map(l => `<tr>
+    tbody.innerHTML = logs.length ? logs.map(l => `<tr>
       <td>${l.created_at?.slice(0,16).replace('T',' ') || '-'}</td>
       <td>${l.display_name || l.username || '-'}</td>
-      <td>${l.action === 'login_success' ? '登录成功' : l.action === 'login_failed' ? '登录失败' : l.action === 'analysis_run' ? '执行分析' : l.action}</td>
+      <td>${l.action === 'login_success' ? t('login_success') : l.action === 'login_failed' ? t('login_fail') : l.action === 'analysis_run' ? 'Run Analysis' : l.action}</td>
       <td>${l.ip || '-'}</td>
-    </tr>`).join('');
+    </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted);">' + t('no_logs') + '</td></tr>';
   } catch (e) { console.error(e); }
 }
 
 // Enter key on login
 document.getElementById('login-pass').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('login-pass').focus(); });
 </script>
 </body>
 </html>
