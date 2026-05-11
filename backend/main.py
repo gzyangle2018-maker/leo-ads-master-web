@@ -21,6 +21,8 @@ from database import Database
 from analyzer_engine import AdsAnalyzerEngine
 from excel_exporter import ExcelExporter
 from llm_client import LLMClient
+from report_parser import ReportParser
+from llm_analyzer import LLMAnalyzer
 
 app = FastAPI(title="Leo Ads Master API", version="2.1")
 
@@ -34,6 +36,10 @@ app.add_middleware(
 )
 
 db = Database()
+
+# In-memory file storage for uploaded reports files
+# key: file_id, value: {"filename": str, "content": bytes, "parsed": dict, "timestamp": str}
+UPLOADED_FILES = {}
 
 # --- Auth ---
 
@@ -76,6 +82,12 @@ class AnalysisRequest(BaseModel):
     tacos: float = 12.0
     unit_session_pct: float = 10.0
     budget_limit_pct: float = 10.0
+    file_ids: List[str] = []
+    use_llm: bool = False
+    llm_provider: str = ""
+    llm_api_key: str = ""
+    llm_base_url: str = ""
+    llm_model: str = ""
 
 @app.post("/api/login")
 def api_login(req: LoginRequest, request: Request):
@@ -133,15 +145,38 @@ def api_set_quota(user_id: int, req: SetQuotaRequest):
 async def api_upload(file: UploadFile = File(...)):
     try:
         content = await file.read()
-        if file.filename.endswith('.csv'):
-            df = pd.read_csv(BytesIO(content))
-        else:
-            df = pd.read_excel(BytesIO(content))
-        file_type = "sp_search_term"
-        rows = len(df)
-        cols = list(df.columns)
-        return {"success": True, "filename": file.filename, "rows": rows, "columns": cols, "preview": df.head(5).to_dict(orient="records")}
+
+        # 解析报表
+        parser = ReportParser()
+        parsed = parser.parse_file(content, file.filename)
+
+        if not parsed.get('success'):
+            raise HTTPException(status_code=400, detail=parsed.get('error', '解析失败'))
+
+        # 生成文件ID并存储
+        file_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{hashlib.md5(content).hexdigest()[:8]}"
+        UPLOADED_FILES[file_id] = {
+            "filename": file.filename,
+            "content": content,
+            "parsed": parsed,
+            "timestamp": datetime.now().isoformat()
+        }
+
+        return {
+            "success": True,
+            "file_id": file_id,
+            "filename": file.filename,
+            "report_type": parsed.get('report_type', 'unknown'),
+            "confidence": parsed.get('confidence', 0),
+            "rows": parsed.get('rows', 0),
+            "columns": parsed.get('columns', []),
+            "normalized_columns": parsed.get('normalized_columns', []),
+            "preview": parsed.get('preview', [])
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/analyze")
@@ -153,107 +188,158 @@ def api_analyze(req: AnalysisRequest, request: Request):
             if usage['quota_analysis'] >= 0 and usage['analysis_count'] >= usage['quota_analysis']:
                 raise HTTPException(status_code=403, detail="分析次数已用完，请联系管理员")
 
-        engine = AdsAnalyzerEngine({})
-        campaigns = []
-        target_asin = req.asin or "B08N5WRWNW"
-        demo = [
-            # SP Auto campaigns
-            {"campaign": "Auto_SP_B08N5WRWNW", "ad_group": "Close Match", "acos_3d": 16.2, "acos_30d": 18.5, "bid": 1.25, "clicks": 48, "orders": 4, "keyword": "power cord", "budget": 22, "sv": "185000", "ar": "1200", "ad_type": "SP"},
-            {"campaign": "Auto_SP_B08N5WRWNW", "ad_group": "Loose Match", "acos_3d": 44.8, "acos_30d": 46.3, "bid": 0.75, "clicks": 135, "orders": 0, "keyword": "cable wire", "budget": 16, "sv": "8500", "ar": "65000", "ad_type": "SP"},
-            {"campaign": "Auto_SP_B08N5WRWNW", "ad_group": "Substitutes", "acos_3d": 31.5, "acos_30d": 33.0, "bid": 0.95, "clicks": 72, "orders": 2, "keyword": "extension cord", "budget": 18, "sv": "68000", "ar": "4500", "ad_type": "SP"},
-            {"campaign": "Auto_SP_B08N5WRWNW", "ad_group": "Complements", "acos_3d": 28.0, "acos_30d": 29.5, "bid": 0.88, "clicks": 65, "orders": 3, "keyword": "power adapter", "budget": 15, "sv": "92000", "ar": "2100", "ad_type": "SP"},
-            # SP Broad campaigns
-            {"campaign": "Broad_SP_B08N5WRWNW_Prospect", "ad_group": "Broad", "acos_3d": 29.5, "acos_30d": 32.1, "bid": 1.45, "clicks": 88, "orders": 4, "keyword": "ac power cable", "budget": 26, "sv": "95000", "ar": "3800", "ad_type": "SP"},
-            {"campaign": "Broad_SP_B08N5WRWNW_Prospect", "ad_group": "Broad", "acos_3d": 38.2, "acos_30d": 40.5, "bid": 0.92, "clicks": 102, "orders": 1, "keyword": "6ft power cord", "budget": 20, "sv": "42000", "ar": "8500", "ad_type": "SP"},
-            {"campaign": "Broad_SP_B08N5WRWNW_Prospect", "ad_group": "Broad", "acos_3d": 35.0, "acos_30d": 36.8, "bid": 0.85, "clicks": 90, "orders": 2, "keyword": "10ft extension cord", "budget": 18, "sv": "28000", "ar": "12000", "ad_type": "SP"},
-            {"campaign": "Broad_SP_B08N5WRWNW_Prospect", "ad_group": "Broad", "acos_3d": 42.0, "acos_30d": 43.5, "bid": 0.78, "clicks": 115, "orders": 0, "keyword": "heavy duty extension cord", "budget": 16, "sv": "15000", "ar": "22000", "ad_type": "SP"},
-            # SP Phrase campaigns
-            {"campaign": "Phrase_SP_B08N5WRWNW_Mid", "ad_group": "Phrase", "acos_3d": 21.0, "acos_30d": 23.5, "bid": 1.65, "clicks": 62, "orders": 5, "keyword": "3 prong power cord", "budget": 28, "sv": "35000", "ar": "28000", "ad_type": "SP"},
-            {"campaign": "Phrase_SP_B08N5WRWNW_Mid", "ad_group": "Phrase", "acos_3d": 24.5, "acos_30d": 26.0, "bid": 1.40, "clicks": 58, "orders": 4, "keyword": "ac power cord 6ft", "budget": 24, "sv": "18000", "ar": "32000", "ad_type": "SP"},
-            {"campaign": "Phrase_SP_B08N5WRWNW_Mid", "ad_group": "Phrase", "acos_3d": 33.0, "acos_30d": 34.5, "bid": 1.10, "clicks": 70, "orders": 2, "keyword": "power cable extension", "budget": 20, "sv": "22000", "ar": "26000", "ad_type": "SP"},
-            # SP Exact campaigns
-            {"campaign": "Exact_SP_B08N5WRWNW_Harvest", "ad_group": "Exact", "acos_3d": 11.5, "acos_30d": 13.2, "bid": 2.05, "clicks": 64, "orders": 9, "keyword": "power cord", "budget": 32, "sv": "185000", "ar": "1200", "ad_type": "SP"},
-            {"campaign": "Exact_SP_B08N5WRWNW_Harvest", "ad_group": "Exact", "acos_3d": 9.8, "acos_30d": 10.5, "bid": 2.45, "clicks": 56, "orders": 7, "keyword": "heavy duty power cord", "budget": 36, "sv": "22000", "ar": "18000", "ad_type": "SP"},
-            {"campaign": "Exact_SP_B08N5WRWNW_Harvest", "ad_group": "Exact", "acos_3d": 7.5, "acos_30d": 8.2, "bid": 2.80, "clicks": 52, "orders": 8, "keyword": "3 prong ac power cord", "budget": 30, "sv": "28000", "ar": "15000", "ad_type": "SP"},
-            {"campaign": "Exact_SP_B08N5WRWNW_Harvest", "ad_group": "Exact", "acos_3d": 13.0, "acos_30d": 14.5, "bid": 1.95, "clicks": 60, "orders": 6, "keyword": "6ft power cord", "budget": 28, "sv": "42000", "ar": "8500", "ad_type": "SP"},
-            # SP Product Targeting
-            {"campaign": "PT_SP_B08N5WRWNW_Comp", "ad_group": "Product Targeting", "acos_3d": 26.5, "acos_30d": 28.0, "bid": 1.20, "clicks": 42, "orders": 3, "keyword": "ASIN_B07XXXXXX", "budget": 18, "sv": "0", "ar": "0", "ad_type": "SP"},
-            {"campaign": "PT_SP_B08N5WRWNW_Comp", "ad_group": "Product Targeting", "acos_3d": 18.0, "acos_30d": 19.5, "bid": 1.35, "clicks": 38, "orders": 4, "keyword": "ASIN_B09XXXXXX", "budget": 16, "sv": "0", "ar": "0", "ad_type": "SP"},
-            # SP Brand Defense
-            {"campaign": "Brand_Defense_SP_B08N5WRWNW", "ad_group": "Brand", "acos_3d": 4.5, "acos_30d": 5.2, "bid": 1.85, "clicks": 45, "orders": 6, "keyword": "brand power cord", "budget": 15, "sv": "2500", "ar": "140000", "ad_type": "SP"},
-            {"campaign": "Brand_Defense_SP_B08N5WRWNW", "ad_group": "Brand", "acos_3d": 6.0, "acos_30d": 6.8, "bid": 1.70, "clicks": 40, "orders": 5, "keyword": "official brand cable", "budget": 14, "sv": "1800", "ar": "165000", "ad_type": "SP"},
-            # SP B2B
-            {"campaign": "B2B_SP_B08N5WRWNW", "ad_group": "B2B", "acos_3d": 19.5, "acos_30d": 21.0, "bid": 1.55, "clicks": 35, "orders": 3, "keyword": "bulk power cord", "budget": 20, "sv": "5500", "ar": "58000", "ad_type": "SP"},
-            {"campaign": "B2B_SP_B08N5WRWNW", "ad_group": "B2B", "acos_3d": 22.0, "acos_30d": 24.0, "bid": 1.30, "clicks": 30, "orders": 2, "keyword": "commercial power cable", "budget": 18, "sv": "3200", "ar": "72000", "ad_type": "SP"},
-            # SB Brand
-            {"campaign": "SB_Brand_B08N5WRWNW", "ad_group": "Brand", "acos_3d": 14.0, "acos_30d": 15.5, "bid": 2.20, "clicks": 78, "orders": 7, "keyword": "brand power cord", "budget": 35, "sv": "2500", "ar": "140000", "ad_type": "SB"},
-            {"campaign": "SB_Brand_B08N5WRWNW", "ad_group": "Brand", "acos_3d": 16.5, "acos_30d": 17.8, "bid": 1.95, "clicks": 68, "orders": 5, "keyword": "official store", "budget": 30, "sv": "1200", "ar": "180000", "ad_type": "SB"},
-            # SB Competitor
-            {"campaign": "SB_Competitor_B08N5WRWNW", "ad_group": "Competitor", "acos_3d": 27.0, "acos_30d": 29.0, "bid": 1.75, "clicks": 55, "orders": 3, "keyword": "competitor brand cord", "budget": 25, "sv": "4800", "ar": "62000", "ad_type": "SB"},
-            {"campaign": "SB_Competitor_B08N5WRWNW", "ad_group": "Competitor", "acos_3d": 31.0, "acos_30d": 33.5, "bid": 1.50, "clicks": 48, "orders": 2, "keyword": "vs competitor cable", "budget": 22, "sv": "2100", "ar": "95000", "ad_type": "SB"},
-            # SD Retargeting
-            {"campaign": "SD_Retarget_B08N5WRWNW", "ad_group": "Views", "acos_3d": 20.0, "acos_30d": 22.0, "bid": 1.10, "clicks": 85, "orders": 5, "keyword": "Views Retargeting", "budget": 28, "sv": "0", "ar": "0", "ad_type": "SD"},
-            {"campaign": "SD_Retarget_B08N5WRWNW", "ad_group": "Views", "acos_3d": 24.0, "acos_30d": 25.5, "bid": 0.95, "clicks": 72, "orders": 4, "keyword": "Purchases Retargeting", "budget": 24, "sv": "0", "ar": "0", "ad_type": "SD"},
-            # SD Lookalike
-            {"campaign": "SD_Lookalike_B08N5WRWNW", "ad_group": "Similar", "acos_3d": 32.0, "acos_30d": 34.0, "bid": 0.85, "clicks": 95, "orders": 2, "keyword": "Similar Products", "budget": 20, "sv": "0", "ar": "0", "ad_type": "SD"},
-            {"campaign": "SD_Lookalike_B08N5WRWNW", "ad_group": "Similar", "acos_3d": 36.5, "acos_30d": 38.0, "bid": 0.72, "clicks": 110, "orders": 1, "keyword": "Lookalike Audience", "budget": 18, "sv": "0", "ar": "0", "ad_type": "SD"},
-        ]
-        core_keywords = {"power cord", "3 prong power cord", "heavy duty power cord", "ac power cable", "extension cord", "power adapter"}
-        for d in demo:
-            campaigns.append({
-                "asin": target_asin,
-                "campaign": d["campaign"], "ad_group": d["ad_group"], "ad_type": d["ad_type"],
-                "budget": d["budget"], "acos_3d": d["acos_3d"], "acos_30d": d["acos_30d"],
-                "bid": d["bid"], "clicks": d["clicks"], "orders": d["orders"],
-                "keyword": d["keyword"],
-                "cvr": d["orders"] / d["clicks"] * 100 if d["clicks"] > 0 else 0,
-                "is_core": d["keyword"] in core_keywords,
-                "search_volume": d.get("sv", "缺失"), "aba_rank": d.get("ar", "缺失")
-            })
+        # 检查是否有上传的真实数据
+        has_uploaded_files = len(req.file_ids) > 0
+        real_campaigns = []
+        parsed_reports = []
 
-        metrics = {
-            "acos": req.acos, "tacos": req.tacos,
-            "unit_session_pct": req.unit_session_pct,
-            "budget_limit_pct": req.budget_limit_pct,
-            "impressions": 10000, "clicks": 500, "orders": 25, "budget": 100
-        }
+        if has_uploaded_files:
+            # 使用上传的真实数据
+            parser = ReportParser()
+            for file_id in req.file_ids:
+                file_info = UPLOADED_FILES.get(file_id)
+                if file_info and file_info.get('parsed'):
+                    parsed_reports.append(file_info['parsed'])
 
-        diagnosis = engine.diagnose(metrics)
-        traffic_tree = engine.build_traffic_tree(campaigns)
-        actions = engine.analyze_12_dimensions(campaigns, metrics, req.stage)
-        monitor_plan = engine.generate_monitor_plan(metrics)
-        three_plans = engine.generate_three_plans(metrics, req.stage)
+            if parsed_reports:
+                real_campaigns = parser.extract_campaign_data(parsed_reports)
 
-        today_add = [a for a in actions if a.get("category") == "加法"][:30]
-        today_sub = [a for a in actions if a.get("category") == "减法"][:30]
+        # 判断是否使用 LLM 分析
+        use_llm = req.use_llm and req.llm_api_key
 
-        result = {
-            "diagnosis": diagnosis,
-            "traffic_tree": traffic_tree,
-            "actions": actions,
-            "today_add": today_add,
-            "today_sub": today_sub,
-            "monitor_plan": monitor_plan,
-            "three_plans": three_plans,
-            "stage": req.stage,
-            "asin": req.asin
-        }
+        if use_llm and has_uploaded_files:
+            # 使用 LLM 智能分析
+            context = parser.build_analysis_context(parsed_reports)
+            llm_analyzer = LLMAnalyzer(
+                provider=req.llm_provider or 'openai',
+                api_key=req.llm_api_key,
+                base_url=req.llm_base_url,
+                model=req.llm_model
+            )
+            metrics = {
+                "acos": req.acos, "tacos": req.tacos,
+                "unit_session_pct": req.unit_session_pct,
+                "budget_limit_pct": req.budget_limit_pct
+            }
+            result = llm_analyzer.analyze_reports(context, metrics, req.stage, req.asin)
+
+            if result.get('success'):
+                result_data = result
+                # 移除 success 和 error 字段
+                if 'success' in result_data:
+                    del result_data['success']
+                if 'error' in result_data:
+                    del result_data['error']
+            else:
+                # LLM 分析失败，回退到规则引擎
+                result_data = _run_rule_engine(req, real_campaigns if has_uploaded_files else None)
+        else:
+            # 使用规则引擎
+            result_data = _run_rule_engine(req, real_campaigns if has_uploaded_files else None)
 
         # Save report and log usage
         if user_id:
             uid = int(user_id)
             db.save_report(uid, f"{req.asin or '未知'}_{req.stage}_分析", "12维分析",
                            asin=req.asin, data_summary=f"ACOS:{req.acos}% TACOS:{req.tacos}%",
-                           result_json=json.dumps(result, ensure_ascii=False))
+                           result_json=json.dumps(result_data, ensure_ascii=False))
             db.increment_usage(uid, 'analysis_count')
             db.log_login(uid, '', 'analysis_run', ip=request.client.host)
 
-        return {"success": True, "result": result}
+        return {"success": True, "result": result_data}
     except HTTPException:
         raise
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+def _run_rule_engine(req: AnalysisRequest, campaigns_data: list = None):
+    """运行本地规则引擎"""
+    engine = AdsAnalyzerEngine({})
+    target_asin = req.asin or "B08N5WRWNW"
+
+    if campaigns_data and len(campaigns_data) > 0:
+        # 使用上传的真实数据
+        campaigns = campaigns_data
+    else:
+        # 使用 demo 数据
+        campaigns = _get_demo_campaigns(target_asin)
+
+    metrics = {
+        "acos": req.acos, "tacos": req.tacos,
+        "unit_session_pct": req.unit_session_pct,
+        "budget_limit_pct": req.budget_limit_pct,
+        "impressions": 10000, "clicks": 500, "orders": 25, "budget": 100
+    }
+
+    diagnosis = engine.diagnose(metrics)
+    traffic_tree = engine.build_traffic_tree(campaigns)
+    actions = engine.analyze_12_dimensions(campaigns, metrics, req.stage)
+    monitor_plan = engine.generate_monitor_plan(metrics)
+    three_plans = engine.generate_three_plans(metrics, req.stage)
+
+    today_add = [a for a in actions if a.get("category") == "加法"][:30]
+    today_sub = [a for a in actions if a.get("category") == "减法"][:30]
+
+    return {
+        "diagnosis": diagnosis,
+        "traffic_tree": traffic_tree,
+        "actions": actions,
+        "today_add": today_add,
+        "today_sub": today_sub,
+        "monitor_plan": monitor_plan,
+        "three_plans": three_plans,
+        "stage": req.stage,
+        "asin": req.asin
+    }
+
+def _get_demo_campaigns(target_asin: str) -> list:
+    """获取 demo campaign 数据"""
+    demo = [
+        {"campaign": "Auto_SP_B08N5WRWNW", "ad_group": "Close Match", "acos_3d": 16.2, "acos_30d": 18.5, "bid": 1.25, "clicks": 48, "orders": 4, "keyword": "power cord", "budget": 22, "sv": "185000", "ar": "1200", "ad_type": "SP"},
+        {"campaign": "Auto_SP_B08N5WRWNW", "ad_group": "Loose Match", "acos_3d": 44.8, "acos_30d": 46.3, "bid": 0.75, "clicks": 135, "orders": 0, "keyword": "cable wire", "budget": 16, "sv": "8500", "ar": "65000", "ad_type": "SP"},
+        {"campaign": "Auto_SP_B08N5WRWNW", "ad_group": "Substitutes", "acos_3d": 31.5, "acos_30d": 33.0, "bid": 0.95, "clicks": 72, "orders": 2, "keyword": "extension cord", "budget": 18, "sv": "68000", "ar": "4500", "ad_type": "SP"},
+        {"campaign": "Auto_SP_B08N5WRWNW", "ad_group": "Complements", "acos_3d": 28.0, "acos_30d": 29.5, "bid": 0.88, "clicks": 65, "orders": 3, "keyword": "power adapter", "budget": 15, "sv": "92000", "ar": "2100", "ad_type": "SP"},
+        {"campaign": "Broad_SP_B08N5WRWNW_Prospect", "ad_group": "Broad", "acos_3d": 29.5, "acos_30d": 32.1, "bid": 1.45, "clicks": 88, "orders": 4, "keyword": "ac power cable", "budget": 26, "sv": "95000", "ar": "3800", "ad_type": "SP"},
+        {"campaign": "Broad_SP_B08N5WRWNW_Prospect", "ad_group": "Broad", "acos_3d": 38.2, "acos_30d": 40.5, "bid": 0.92, "clicks": 102, "orders": 1, "keyword": "6ft power cord", "budget": 20, "sv": "42000", "ar": "8500", "ad_type": "SP"},
+        {"campaign": "Broad_SP_B08N5WRWNW_Prospect", "ad_group": "Broad", "acos_3d": 35.0, "acos_30d": 36.8, "bid": 0.85, "clicks": 90, "orders": 2, "keyword": "10ft extension cord", "budget": 18, "sv": "28000", "ar": "12000", "ad_type": "SP"},
+        {"campaign": "Broad_SP_B08N5WRWNW_Prospect", "ad_group": "Broad", "acos_3d": 42.0, "acos_30d": 43.5, "bid": 0.78, "clicks": 115, "orders": 0, "keyword": "heavy duty extension cord", "budget": 16, "sv": "15000", "ar": "22000", "ad_type": "SP"},
+        {"campaign": "Phrase_SP_B08N5WRWNW_Mid", "ad_group": "Phrase", "acos_3d": 21.0, "acos_30d": 23.5, "bid": 1.65, "clicks": 62, "orders": 5, "keyword": "3 prong power cord", "budget": 28, "sv": "35000", "ar": "28000", "ad_type": "SP"},
+        {"campaign": "Phrase_SP_B08N5WRWNW_Mid", "ad_group": "Phrase", "acos_3d": 24.5, "acos_30d": 26.0, "bid": 1.40, "clicks": 58, "orders": 4, "keyword": "ac power cord 6ft", "budget": 24, "sv": "18000", "ar": "32000", "ad_type": "SP"},
+        {"campaign": "Phrase_SP_B08N5WRWNW_Mid", "ad_group": "Phrase", "acos_3d": 33.0, "acos_30d": 34.5, "bid": 1.10, "clicks": 70, "orders": 2, "keyword": "power cable extension", "budget": 20, "sv": "22000", "ar": "26000", "ad_type": "SP"},
+        {"campaign": "Exact_SP_B08N5WRWNW_Harvest", "ad_group": "Exact", "acos_3d": 11.5, "acos_30d": 13.2, "bid": 2.05, "clicks": 64, "orders": 9, "keyword": "power cord", "budget": 32, "sv": "185000", "ar": "1200", "ad_type": "SP"},
+        {"campaign": "Exact_SP_B08N5WRWNW_Harvest", "ad_group": "Exact", "acos_3d": 9.8, "acos_30d": 10.5, "bid": 2.45, "clicks": 56, "orders": 7, "keyword": "heavy duty power cord", "budget": 36, "sv": "22000", "ar": "18000", "ad_type": "SP"},
+        {"campaign": "Exact_SP_B08N5WRWNW_Harvest", "ad_group": "Exact", "acos_3d": 7.5, "acos_30d": 8.2, "bid": 2.80, "clicks": 52, "orders": 8, "keyword": "3 prong ac power cord", "budget": 30, "sv": "28000", "ar": "15000", "ad_type": "SP"},
+        {"campaign": "Exact_SP_B08N5WRWNW_Harvest", "ad_group": "Exact", "acos_3d": 13.0, "acos_30d": 14.5, "bid": 1.95, "clicks": 60, "orders": 6, "keyword": "6ft power cord", "budget": 28, "sv": "42000", "ar": "8500", "ad_type": "SP"},
+        {"campaign": "PT_SP_B08N5WRWNW_Comp", "ad_group": "Product Targeting", "acos_3d": 26.5, "acos_30d": 28.0, "bid": 1.20, "clicks": 42, "orders": 3, "keyword": "ASIN_B07XXXXXX", "budget": 18, "sv": "0", "ar": "0", "ad_type": "SP"},
+        {"campaign": "PT_SP_B08N5WRWNW_Comp", "ad_group": "Product Targeting", "acos_3d": 18.0, "acos_30d": 19.5, "bid": 1.35, "clicks": 38, "orders": 4, "keyword": "ASIN_B09XXXXXX", "budget": 16, "sv": "0", "ar": "0", "ad_type": "SP"},
+        {"campaign": "Brand_Defense_SP_B08N5WRWNW", "ad_group": "Brand", "acos_3d": 4.5, "acos_30d": 5.2, "bid": 1.85, "clicks": 45, "orders": 6, "keyword": "brand power cord", "budget": 15, "sv": "2500", "ar": "140000", "ad_type": "SP"},
+        {"campaign": "Brand_Defense_SP_B08N5WRWNW", "ad_group": "Brand", "acos_3d": 6.0, "acos_30d": 6.8, "bid": 1.70, "clicks": 40, "orders": 5, "keyword": "official brand cable", "budget": 14, "sv": "1800", "ar": "165000", "ad_type": "SP"},
+        {"campaign": "B2B_SP_B08N5WRWNW", "ad_group": "B2B", "acos_3d": 19.5, "acos_30d": 21.0, "bid": 1.55, "clicks": 35, "orders": 3, "keyword": "bulk power cord", "budget": 20, "sv": "5500", "ar": "58000", "ad_type": "SP"},
+        {"campaign": "B2B_SP_B08N5WRWNW", "ad_group": "B2B", "acos_3d": 22.0, "acos_30d": 24.0, "bid": 1.30, "clicks": 30, "orders": 2, "keyword": "commercial power cable", "budget": 18, "sv": "3200", "ar": "72000", "ad_type": "SP"},
+        {"campaign": "SB_Brand_B08N5WRWNW", "ad_group": "Brand", "acos_3d": 14.0, "acos_30d": 15.5, "bid": 2.20, "clicks": 78, "orders": 7, "keyword": "brand power cord", "budget": 35, "sv": "2500", "ar": "140000", "ad_type": "SB"},
+        {"campaign": "SB_Brand_B08N5WRWNW", "ad_group": "Brand", "acos_3d": 16.5, "acos_30d": 17.8, "bid": 1.95, "clicks": 68, "orders": 5, "keyword": "official store", "budget": 30, "sv": "1200", "ar": "180000", "ad_type": "SB"},
+        {"campaign": "SB_Competitor_B08N5WRWNW", "ad_group": "Competitor", "acos_3d": 27.0, "acos_30d": 29.0, "bid": 1.75, "clicks": 55, "orders": 3, "keyword": "competitor brand cord", "budget": 25, "sv": "4800", "ar": "62000", "ad_type": "SB"},
+        {"campaign": "SB_Competitor_B08N5WRWNW", "ad_group": "Competitor", "acos_3d": 31.0, "acos_30d": 33.5, "bid": 1.50, "clicks": 48, "orders": 2, "keyword": "vs competitor cable", "budget": 22, "sv": "2100", "ar": "95000", "ad_type": "SB"},
+        {"campaign": "SD_Retarget_B08N5WRWNW", "ad_group": "Views", "acos_3d": 20.0, "acos_30d": 22.0, "bid": 1.10, "clicks": 85, "orders": 5, "keyword": "Views Retargeting", "budget": 28, "sv": "0", "ar": "0", "ad_type": "SD"},
+        {"campaign": "SD_Retarget_B08N5WRWNW", "ad_group": "Views", "acos_3d": 24.0, "acos_30d": 25.5, "bid": 0.95, "clicks": 72, "orders": 4, "keyword": "Purchases Retargeting", "budget": 24, "sv": "0", "ar": "0", "ad_type": "SD"},
+        {"campaign": "SD_Lookalike_B08N5WRWNW", "ad_group": "Similar", "acos_3d": 32.0, "acos_30d": 34.0, "bid": 0.85, "clicks": 95, "orders": 2, "keyword": "Similar Products", "budget": 20, "sv": "0", "ar": "0", "ad_type": "SD"},
+        {"campaign": "SD_Lookalike_B08N5WRWNW", "ad_group": "Similar", "acos_3d": 36.5, "acos_30d": 38.0, "bid": 0.72, "clicks": 110, "orders": 1, "keyword": "Lookalike Audience", "budget": 18, "sv": "0", "ar": "0", "ad_type": "SD"},
+    ]
+    core_keywords = {"power cord", "3 prong power cord", "heavy duty power cord", "ac power cable", "extension cord", "power adapter"}
+    campaigns = []
+    for d in demo:
+        campaigns.append({
+            "asin": target_asin,
+            "campaign": d["campaign"], "ad_group": d["ad_group"], "ad_type": d["ad_type"],
+            "budget": d["budget"], "acos_3d": d["acos_3d"], "acos_30d": d["acos_30d"],
+            "bid": d["bid"], "clicks": d["clicks"], "orders": d["orders"],
+            "keyword": d["keyword"],
+            "cvr": d["orders"] / d["clicks"] * 100 if d["clicks"] > 0 else 0,
+            "is_core": d["keyword"] in core_keywords,
+            "search_volume": d.get("sv", "缺失"), "aba_rank": d.get("ar", "缺失")
+        })
+    return campaigns
 
 @app.post("/api/export")
 def api_export(req: AnalysisRequest):
