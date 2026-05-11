@@ -332,9 +332,28 @@ def api_logs(request: Request, user_id: int = None):
 
 @app.get("/api/llm/providers")
 def api_llm_providers():
-    return LLMClient.PROVIDERS
+    disabled_raw = db.get_config("disabled_llm_providers", "")
+    disabled = set(p.strip() for p in disabled_raw.split(",") if p.strip())
+    providers = {}
+    for key, val in LLMClient.PROVIDERS.items():
+        providers[key] = {**val, "enabled": key not in disabled}
+    return providers
 
-@app.post("/api/llm/test")
+@app.post("/api/llm/providers/{provider}/toggle")
+def api_toggle_provider(provider: str, request: Request):
+    role = request.headers.get('x-user-role', 'member')
+    if role != 'admin':
+        raise HTTPException(status_code=403, detail="只有管理员可以操作")
+    disabled_raw = db.get_config("disabled_llm_providers", "")
+    disabled = set(p.strip() for p in disabled_raw.split(",") if p.strip())
+    if provider in disabled:
+        disabled.discard(provider)
+    else:
+        disabled.add(provider)
+    db.set_config("disabled_llm_providers", ",".join(disabled))
+    return {"success": True, "disabled": list(disabled)}
+
+@app.get("/api/llm/test")
 def api_llm_test(provider: str, api_key: str, base_url: str = "", model: str = ""):
     try:
         client = LLMClient(provider=provider, api_key=api_key, base_url=base_url, model=model)
