@@ -76,6 +76,41 @@ class LLMClient:
             'default_model': 'ernie-4.0-turbo-8k',
             'key_prefix': '',
         },
+        'gemini': {
+            'name': 'Google Gemini',
+            'base_url': 'https://generativelanguage.googleapis.com/v1beta/openai',
+            'models': ['gemini-2.5-pro-preview-03-25', 'gemini-2.0-flash', 'gemini-1.5-pro'],
+            'default_model': 'gemini-2.5-pro-preview-03-25',
+            'key_prefix': '',
+        },
+        'grok': {
+            'name': 'xAI Grok',
+            'base_url': 'https://api.x.ai/v1',
+            'models': ['grok-3', 'grok-3-mini', 'grok-2'],
+            'default_model': 'grok-3',
+            'key_prefix': '',
+        },
+        'cohere': {
+            'name': 'Cohere',
+            'base_url': 'https://api.cohere.ai/v1',
+            'models': ['command-r-plus', 'command-r', 'command'],
+            'default_model': 'command-r-plus',
+            'key_prefix': '',
+        },
+        'openrouter': {
+            'name': 'OpenRouter',
+            'base_url': 'https://openrouter.ai/api/v1',
+            'models': ['openrouter/auto', 'anthropic/claude-3.5-sonnet', 'google/gemini-2.5-pro-preview'],
+            'default_model': 'openrouter/auto',
+            'key_prefix': '',
+        },
+        'siliconflow': {
+            'name': 'SiliconFlow',
+            'base_url': 'https://api.siliconflow.cn/v1',
+            'models': ['deepseek-ai/DeepSeek-V3', 'deepseek-ai/DeepSeek-R1', 'Qwen/Qwen2.5-72B-Instruct'],
+            'default_model': 'deepseek-ai/DeepSeek-V3',
+            'key_prefix': '',
+        },
     }
 
     def __init__(self, provider: str = 'openai', api_key: str = '',
