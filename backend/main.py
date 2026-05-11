@@ -302,11 +302,12 @@ def api_save_snapshot(req: SnapshotRequest, request: Request):
     return {"success": True, "id": snapshot_id}
 
 @app.get("/api/snapshots")
-def api_get_snapshots(asin: str, dimension: str = "week", request: Request = None):
+def api_get_snapshots(request: Request, asin: str = "", dimension: str = "week", period: str = ""):
     user_id = request.headers.get('x-user-id')
     if not user_id:
         raise HTTPException(status_code=401, detail="未登录")
-    snapshots = db.get_snapshots(int(user_id), asin, dimension)
+    dim = period or dimension
+    snapshots = db.get_snapshots(int(user_id), asin, dim)
     return snapshots
 
 @app.delete("/api/snapshots/{snapshot_id}")
