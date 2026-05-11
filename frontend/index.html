@@ -173,6 +173,7 @@
     <div class="nav-item" onclick="showPage('reports',this)">报告中心</div>
     <div class="nav-item admin-only hidden" onclick="showPage('admin',this)">团队管理</div>
     <div class="nav-item admin-only hidden" onclick="showPage('logs',this)">日志中心</div>
+    <div class="nav-item" onclick="showPage('knowledge',this)">知识库</div>
     <div class="nav-item" onclick="showPage('settings',this)">系统设置</div>
     <div class="sidebar-bottom">
       <div class="user-card" id="user-card" onclick="openPasswordModal()">Guest</div>
@@ -229,7 +230,10 @@
           <div class="dropzone-text">点击或拖拽上传 CSV / Excel 报表</div>
         </div>
         <input type="file" id="fileInput" class="hidden" multiple accept=".csv,.xlsx,.xls" onchange="handleFiles(this.files)">
-        <div id="file-status" style="margin-top:12px;color:var(--muted);font-size:13px;">尚未上传数据</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;">
+          <div id="file-status" style="color:var(--muted);font-size:13px;">尚未上传数据</div>
+          <button class="btn btn-small btn-secondary" onclick="clearUploadedFiles()">🗑️ 清空已上传文件</button>
+        </div>
         <div class="alert" id="missing-alert">⚠️ 尚未上传任何报表，请至少上传 SP搜索词 + Campaign Summary + Business Report</div>
       </div>
 
@@ -407,7 +411,7 @@
       <div class="card">
         <div class="card-title">AI 大模型配置</div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">模型服务商</label><select id="llm-provider" class="input" onchange="onProviderChange()"><option value="openai">OpenAI</option><option value="claude">Claude</option><option value="zhipu">智谱AI (GLM)</option><option value="qwen">通义千问 (Aliyun)</option><option value="deepseek">DeepSeek</option><option value="moonshot">Moonshot (Kimi)</option><option value="baidu">百度文心一言</option></select></div>
+          <div class="form-group"><label class="form-label">模型服务商</label><select id="llm-provider" class="input" onchange="onProviderChange()"><option value="openai">OpenAI</option><option value="claude">Claude</option><option value="gemini">Google Gemini</option><option value="grok">xAI Grok</option><option value="cohere">Cohere</option><option value="openrouter">OpenRouter</option><option value="azure">Azure OpenAI</option><option value="zhipu">智谱AI (GLM)</option><option value="qwen">通义千问 (Aliyun)</option><option value="deepseek">DeepSeek</option><option value="moonshot">Moonshot (Kimi)</option><option value="baidu">百度文心一言</option><option value="siliconflow">SiliconFlow</option></select></div>
           <div class="form-group"><label class="form-label">API Key</label><input type="password" id="llm-apikey" class="input" placeholder="输入 API Key"></div>
           <div class="form-group"><label class="form-label">Base URL</label><input type="text" id="llm-baseurl" class="input" placeholder="留空使用默认"></div>
           <div class="form-group"><label class="form-label">模型名称</label><input type="text" id="llm-model" class="input" placeholder="留空使用推荐模型"></div>
@@ -424,6 +428,178 @@
           推荐购买链接：<a href="https://ceworld-api.pages.dev/" target="_blank" style="color:var(--blue);">https://ceworld-api.pages.dev/</a><br>
           管理员可统一购买 API 后分配给团队成员使用。
         </div>
+      </div>
+    </div>
+
+    <!-- Knowledge Base -->
+    <div id="page-knowledge" class="hidden">
+      <div class="page-title">亚马逊广告知识库</div>
+      <div class="page-desc">基于Amazon官方文档的广告规则库、字段库、动作库</div>
+
+      <div class="card">
+        <div class="card-title">核心指标字典</div>
+        <table>
+          <thead><tr><th>字段</th><th>中文解释</th><th>系统用途</th></tr></thead>
+          <tbody>
+            <tr><td>Impressions</td><td>曝光</td><td>判断流量入口是否打开</td></tr>
+            <tr><td>Clicks</td><td>点击</td><td>判断买家兴趣</td></tr>
+            <tr><td>CTR</td><td>点击率</td><td>判断图、标题、价格、广告位吸引力</td></tr>
+            <tr><td>CPC</td><td>单次点击成本</td><td>判断竞价压力</td></tr>
+            <tr><td>Spend / Cost</td><td>广告花费</td><td>控制预算</td></tr>
+            <tr><td>Orders / Purchases</td><td>广告订单</td><td>判断转化</td></tr>
+            <tr><td>Sales</td><td>广告销售额</td><td>判断产出</td></tr>
+            <tr><td>CVR</td><td>转化率</td><td>判断listing/价格/评论/相关性</td></tr>
+            <tr><td>ACOS</td><td>花费÷销售额</td><td>判断广告盈利压力</td></tr>
+            <tr><td>ROAS</td><td>销售额÷花费</td><td>判断投入产出</td></tr>
+            <tr><td>NTB Orders</td><td>新客订单</td><td>判断品牌拉新</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">搜索词处理规则</div>
+        <table>
+          <thead><tr><th>条件</th><th>动作</th></tr></thead>
+          <tbody>
+            <tr><td>搜索词Orders≥2且ACOS<目标ACOS</td><td>加入精准关键词</td></tr>
+            <tr><td>搜索词Orders≥2且CVR高</td><td>同步加入Phrase/Exact</td></tr>
+            <tr><td>搜索词Clicks≥10且Orders=0</td><td>加入否定精准候选</td></tr>
+            <tr><td>搜索词Spend≥单品毛利×1.5且Orders=0</td><td>强制否定或暂停</td></tr>
+            <tr><td>搜索词相关性低</td><td>直接否定精准</td></tr>
+            <tr><td>搜索词相关性高但未转化</td><td>降价观察，不马上否定</td></tr>
+            <tr><td>搜索词为竞品品牌词</td><td>单独建竞品Campaign，不混在自动广告里</td></tr>
+            <tr><td>搜索词为核心大词</td><td>不轻易否定，先降价、拆组、看Placement</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">竞价调整规则</div>
+        <table>
+          <thead><tr><th>条件</th><th>动作</th></tr></thead>
+          <tbody>
+            <tr><td>ACOS 0–10%</td><td>Bid +15%到+25%</td></tr>
+            <tr><td>ACOS 10–20%</td><td>Bid +5%到+15%</td></tr>
+            <tr><td>ACOS接近目标</td><td>保持</td></tr>
+            <tr><td>ACOS高于目标20%–50%</td><td>Bid -10%到-20%</td></tr>
+            <tr><td>ACOS高于目标50%+</td><td>Bid -20%到-40%</td></tr>
+            <tr><td>Clicks高、无订单</td><td>降价或否定</td></tr>
+            <tr><td>曝光低、点击低、相关性高</td><td>小幅加价</td></tr>
+            <tr><td>曝光高、CTR低</td><td>检查主图、价格、标题、广告位</td></tr>
+            <tr><td>点击高、CVR低</td><td>检查Listing、价格、Review、Coupon</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">预算规则</div>
+        <table>
+          <thead><tr><th>条件</th><th>动作</th></tr></thead>
+          <tbody>
+            <tr><td>Campaign ACOS<目标且预算花完</td><td>预算+30%到+100%</td></tr>
+            <tr><td>Campaign ROAS高且Lost Budget高</td><td>预算+50%</td></tr>
+            <tr><td>Campaign ACOS高且预算花完</td><td>预算不加，先降bid/否词</td></tr>
+            <tr><td>Campaign花不出去</td><td>不盲目加预算，先看bid、相关性、关键词量</td></tr>
+            <tr><td>秒杀/Prime Day/黑五</td><td>设置Schedule Budget Rule</td></tr>
+            <tr><td>稳定盈利Campaign</td><td>设置Performance Budget Rule</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">广告位规则</div>
+        <table>
+          <thead><tr><th>广告位</th><th>判断逻辑</th><th>动作</th></tr></thead>
+          <tbody>
+            <tr><td>Top of Search</td><td>高CTR、高CVR、高CPC</td><td>赚钱则加Placement Bid</td></tr>
+            <tr><td>Rest of Search</td><td>中等流量，通常更稳定</td><td>适合稳定放量</td></tr>
+            <tr><td>Product Pages</td><td>竞品拦截、详情页流量</td><td>ACOS高就降，不要硬烧</td></tr>
+            <tr><td>Amazon Business Placement</td><td>企业购流量</td><td>3C类可重点测试</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">竞价策略规则</div>
+        <table>
+          <thead><tr><th>竞价模式</th><th>适用场景</th><th>系统判断</th></tr></thead>
+          <tbody>
+            <tr><td>Dynamic bids - down only</td><td>新品测试、控制风险</td><td>默认安全模式</td></tr>
+            <tr><td>Dynamic bids - up and down</td><td>高转化、预算足、抢位</td><td>只给成熟盈利词</td></tr>
+            <tr><td>Fixed bids</td><td>想稳定拿量、避免系统过度压价</td><td>核心精准词可用</td></tr>
+            <tr><td>Rule-based bidding</td><td>有稳定转化数据后</td><td>按ROAS guardrail自动化</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">广告系统诊断流程</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--muted);">
+          <b>Step 1：导入报表</b><br>
+          SP/SB/SD Campaign → SP/SB/SD Targeting → SP/SB Search Term → SP Placement → Advertised Product → Purchased Product → Business Report → 库存/价格/Coupon/Review/Buy Box<br><br>
+          <b>Step 2：统一字段</b><br>
+          统一date、campaign_id、ad_group_id、target_id、asin、sku<br><br>
+          <b>Step 3：计算指标</b><br>
+          CPC、CVR、ACOS、ROAS、CPA、Profit After Ads<br><br>
+          <b>Step 4：打标签</b><br>
+          赚钱词 / 亏损词 / 高点击无转化词 / 高曝光低点击词 / 高转化低曝光词 / 预算受限活动 / 广告位浪费活动 / ASIN拖后腿活动<br><br>
+          <b>Step 5：生成动作</b><br>
+          加预算 / 降预算 / 加bid / 降bid / 暂停target / 否定搜索词 / 拓精准词 / 拆广告组 / 新建Campaign / 调整Placement
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">SP报表优先级与用途</div>
+        <table>
+          <thead><tr><th>报表</th><th>粒度</th><th>核心用途</th><th>系统动作</th></tr></thead>
+          <tbody>
+            <tr><td>Campaign Report</td><td>Campaign</td><td>判断整个广告活动是否赚钱</td><td>预算加减、活动开关、结构重组</td></tr>
+            <tr><td>Ad Group Report</td><td>Ad Group</td><td>判断广告组结构是否合理</td><td>拆分广告组、合并无效组</td></tr>
+            <tr><td>Targeting Report</td><td>Keyword/ASIN/Category</td><td>判断关键词/ASIN/类目投放表现</td><td>加价、降价、暂停、否定</td></tr>
+            <tr><td>Search Term Report</td><td>Customer Search Term</td><td>找真实买家搜索词</td><td>精准拓词、精准否词</td></tr>
+            <tr><td>Advertised Product</td><td>SKU/ASIN</td><td>判断哪个产品值得继续推</td><td>ASIN广告预算分配</td></tr>
+            <tr><td>Placement Report</td><td>Placement</td><td>判断广告位效率</td><td>搜索首页加价、商品页加价/降价</td></tr>
+            <tr><td>Search Term Impression Share</td><td>Search Term</td><td>判断核心词广告曝光份额</td><td>核心词抢量、份额防守</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">SB（品牌推广）广告特殊逻辑</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--muted);">
+          SB重点不是只看ACOS，要分两套逻辑：<br><br>
+          <b>品牌防守：</b>品牌词ACOS低、转化稳、预算不断<br>
+          <b>品牌拉新：</b>竞品词/类目词ACOS可高，但要看New-to-Brand<br><br>
+          SB报表清单：Campaign Report / Keyword/Targeting Report / Search Term Report / Placement Report / Purchased Product Report / New-to-Brand Metrics
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">SD（展示型推广）广告注意点</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--muted);">
+          SD最大风险：容易吃掉自然单或品牌已有需求。系统要区分：<br><br>
+          点击归因订单 / 浏览归因订单 / 品牌内halo销售 / 真实新增销售<br><br>
+          SD报表清单：Campaign Report / Targeting Report / Advertised Product Report / Purchased Product Report / Audience Report
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">系统输出模板</div>
+        <table>
+          <thead><tr><th>层级</th><th>输出内容</th></tr></thead>
+          <tbody>
+            <tr><td>Campaign层</td><td>哪些活动加预算、降预算、暂停</td></tr>
+            <tr><td>Ad Group层</td><td>哪些广告组拆分、合并、重建</td></tr>
+            <tr><td>Target层</td><td>每个关键词/ASIN/类目bid调整</td></tr>
+            <tr><td>Search Term层</td><td>哪些词精准拓词、哪些词否定</td></tr>
+            <tr><td>Placement层</td><td>Top of Search/Rest of Search/Product Pages加减比例</td></tr>
+            <tr><td>ASIN层</td><td>哪些ASIN值得推，哪些ASIN拖累广告</td></tr>
+            <tr><td>Budget层</td><td>每个Campaign新预算</td></tr>
+            <tr><td>Bid层</td><td>每个Target新Bid</td></tr>
+            <tr><td>监控层</td><td>3天/7天后看什么指标</td></tr>
+            <tr><td>风险层</td><td>哪些动作可能影响自然单、排名、预算消耗</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -471,6 +647,7 @@ let currentUser = null;
 let analysisData = null;
 let currentTimePeriod = 'day';
 let currentSnapshots = [];
+let uploadedFiles = [];
 const API_BASE = "https://leo-ads-master-api.onrender.com";
 
 const LLM_DEFAULTS = {
@@ -480,7 +657,13 @@ const LLM_DEFAULTS = {
   qwen: { base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-max' },
   deepseek: { base_url: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
   moonshot: { base_url: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
-  baidu: { base_url: 'https://qianfan.baidubce.com/v2', model: 'ernie-4.0-turbo-8k' }
+  baidu: { base_url: 'https://qianfan.baidubce.com/v2', model: 'ernie-4.0-turbo-8k' },
+  gemini: { base_url: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-pro-preview-03-25' },
+  grok: { base_url: 'https://api.x.ai/v1', model: 'grok-3' },
+  cohere: { base_url: 'https://api.cohere.ai/v1', model: 'command-r-plus' },
+  openrouter: { base_url: 'https://openrouter.ai/api/v1', model: 'openrouter/auto' },
+  siliconflow: { base_url: 'https://api.siliconflow.cn/v1', model: 'deepseek-ai/DeepSeek-V3' },
+  azure: { base_url: 'https://{your-resource}.openai.azure.com/openai/deployments/{your-deployment}', model: 'gpt-4o' }
 };
 
 function apiFetch(url, opts = {}) {
@@ -567,10 +750,19 @@ async function changeMyPassword() {
 
 function handleFiles(files) {
   if (!files.length) return;
+  uploadedFiles = Array.from(files);
   document.getElementById('file-status').textContent = `已选择 ${files.length} 个文件`;
   document.getElementById('file-status').style.color = 'var(--green)';
   document.getElementById('missing-alert').textContent = '✅ 文件已选择，可以开始分析';
   document.getElementById('missing-alert').className = 'alert alert-success';
+}
+
+function clearUploadedFiles() {
+  uploadedFiles = [];
+  document.getElementById('file-status').textContent = '尚未上传数据';
+  document.getElementById('missing-alert').style.display = 'block';
+  document.getElementById('fileInput').value = '';
+  alert('已清空所有上传文件');
 }
 
 async function startAnalysis() {
@@ -738,7 +930,7 @@ function getCategoryBadge(category) {
 function renderActionsGrouped(actions) {
   const grouped = {};
   actions.forEach(a => {
-    const camp = a.campaign || '(未命名Campaign)';
+    const camp = (a.campaign || '(未命名Campaign)') + ' | ' + (a.ad_group || '-');
     if (!grouped[camp]) grouped[camp] = [];
     grouped[camp].push(a);
   });
@@ -854,15 +1046,21 @@ function onProviderChange() {
 
 async function testLLM() {
   const btn = event.target;
+  const originalText = btn.textContent;
   btn.textContent = '测试中...';
   const result = document.getElementById('llm-test-result');
   try {
-    const res = await fetch(`${API_BASE}/api/llm/test?provider=${document.getElementById('llm-provider').value}&api_key=${document.getElementById('llm-apikey').value}&base_url=${document.getElementById('llm-baseurl').value}&model=${document.getElementById('llm-model').value}`);
+    const res = await fetch(`${API_BASE}/api/llm/test?provider=${encodeURIComponent(document.getElementById('llm-provider').value)}&api_key=${encodeURIComponent(document.getElementById('llm-apikey').value)}&base_url=${encodeURIComponent(document.getElementById('llm-baseurl').value)}&model=${encodeURIComponent(document.getElementById('llm-model').value)}`);
     const data = await res.json();
-    result.textContent = data.message;
-    result.style.color = data.success ? 'var(--green)' : 'var(--red)';
-  } catch (e) { result.textContent = '测试异常'; result.style.color = 'var(--red)'; }
-  btn.textContent = '测试连接';
+    if (data.success) {
+      result.innerHTML = `<span style="color:var(--green);font-weight:600;">✅ 连接成功</span><br><span style="color:var(--muted);font-size:12px;">${data.message || ''}</span>`;
+    } else {
+      result.innerHTML = `<span style="color:var(--red);font-weight:600;">❌ 连接失败</span><br><span style="color:var(--muted);font-size:12px;">${data.message || '未知错误'}</span>`;
+    }
+  } catch (e) { 
+    result.innerHTML = `<span style="color:var(--red);font-weight:600;">❌ 测试异常</span><br><span style="color:var(--muted);font-size:12px;">${e.message || '网络请求失败'}</span>`; 
+  }
+  btn.textContent = originalText;
 }
 
 function saveSettings() {
@@ -888,7 +1086,7 @@ async function saveSnapshot() {
       body: JSON.stringify({
         asin: asin,
         stage: document.getElementById('stage').value,
-        period: currentTimePeriod,
+        dimension: currentTimePeriod,
         metrics: {
           acos: parseFloat(document.getElementById('acos').value),
           tacos: parseFloat(document.getElementById('tacos').value),
@@ -903,7 +1101,7 @@ async function saveSnapshot() {
 async function loadSnapshots(asin) {
   if (!asin) return;
   try {
-    const res = await apiFetch(`${API_BASE}/api/snapshots?asin=${encodeURIComponent(asin)}&period=${currentTimePeriod}`);
+    const res = await apiFetch(`${API_BASE}/api/snapshots?asin=${encodeURIComponent(asin)}&dimension=${currentTimePeriod}`);
     const data = await res.json();
     currentSnapshots = data.snapshots || [];
     renderSnapshots();
@@ -920,34 +1118,55 @@ function renderSnapshots() {
   }
   card.style.display = 'block';
 
-  let html = '<table><thead><tr><th>日期</th><th>ASIN</th><th>阶段</th><th>目标ACOS</th><th>目标TACOS</th><th>预算上限</th><th>环比变化</th></tr></thead><tbody>';
-
-  currentSnapshots.forEach((snap, i) => {
-    const prev = currentSnapshots[i + 1];
-    let changeHtml = '<span class="snapshot-neutral">-</span>';
-    if (prev) {
-      const curAcos = snap.metrics?.acos || 0;
-      const prevAcos = prev.metrics?.acos || 0;
-      if (prevAcos > 0) {
-        const diff = ((curAcos - prevAcos) / prevAcos * 100).toFixed(1);
-        if (diff > 0) changeHtml = `<span class="snapshot-negative">+${diff}% ACOS↑</span>`;
-        else if (diff < 0) changeHtml = `<span class="snapshot-positive">${diff}% ACOS↓</span>`;
-        else changeHtml = '<span class="snapshot-neutral">0%</span>';
-      }
-    }
-
-    const dateStr = snap.created_at ? snap.created_at.slice(0,16).replace('T',' ') : '-';
-    html += `<tr>
-      <td>${dateStr}</td>
-      <td>${snap.asin || '-'}</td>
-      <td>${snap.stage || '-'}</td>
-      <td>${snap.metrics?.acos != null ? snap.metrics.acos + '%' : '-'}</td>
-      <td>${snap.metrics?.tacos != null ? snap.metrics.tacos + '%' : '-'}</td>
-      <td>${snap.metrics?.budget != null ? snap.metrics.budget + '%' : '-'}</td>
-      <td>${changeHtml}</td>
-    </tr>`;
+  // Group by ASIN
+  const byAsin = {};
+  currentSnapshots.forEach(snap => {
+    const asin = snap.asin || '未知ASIN';
+    if (!byAsin[asin]) byAsin[asin] = [];
+    byAsin[asin].push(snap);
   });
-  html += '</tbody></table>';
+
+  let html = '';
+  Object.keys(byAsin).forEach(asin => {
+    const snaps = byAsin[asin].sort((a,b) => (a.snapshot_date||a.created_at).localeCompare(b.snapshot_date||b.created_at));
+    html += `<div style="margin-bottom:16px;border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+      <div style="background:#3a3a3c;padding:10px 14px;font-weight:600;font-size:14px;">📦 ${asin} <span style="color:var(--muted);font-size:12px;font-weight:400;">(${snaps.length} 条记录)</span></div>
+      <table style="margin:0;"><thead><tr><th>日期</th><th>维度</th><th>阶段</th><th>目标ACOS</th><th>目标TACOS</th><th>预算上限</th><th>环比变化</th></tr></thead><tbody>`;
+    snaps.forEach((snap, i) => {
+      const prev = snaps[i + 1];
+      let changeHtml = '<span class="snapshot-neutral">-</span>';
+      let metrics = snap.metrics || {};
+      // Backend stores metrics_json as string, try parse
+      if (snap.metrics_json) {
+        try { metrics = JSON.parse(snap.metrics_json); } catch(e){}
+      }
+      if (prev) {
+        let prevMetrics = prev.metrics || {};
+        if (prev.metrics_json) {
+          try { prevMetrics = JSON.parse(prev.metrics_json); } catch(e){}
+        }
+        const curAcos = metrics.acos || 0;
+        const prevAcos = prevMetrics.acos || 0;
+        if (prevAcos > 0) {
+          const diff = ((curAcos - prevAcos) / prevAcos * 100).toFixed(1);
+          if (diff > 0) changeHtml = `<span class="snapshot-negative">+${diff}% ACOS↑</span>`;
+          else if (diff < 0) changeHtml = `<span class="snapshot-positive">${diff}% ACOS↓</span>`;
+          else changeHtml = '<span class="snapshot-neutral">0%</span>';
+        }
+      }
+      const dateStr = (snap.snapshot_date || snap.created_at || '-').slice(0,16).replace('T',' ');
+      html += `<tr>
+        <td>${dateStr}</td>
+        <td>${snap.dimension || '-'}</td>
+        <td>${snap.stage || '-'}</td>
+        <td>${metrics.acos != null ? metrics.acos + '%' : '-'}</td>
+        <td>${metrics.tacos != null ? metrics.tacos + '%' : '-'}</td>
+        <td>${metrics.budget != null ? metrics.budget + '%' : '-'}</td>
+        <td>${changeHtml}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  });
   container.innerHTML = html;
 }
 
