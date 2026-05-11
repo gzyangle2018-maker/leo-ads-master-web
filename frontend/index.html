@@ -429,6 +429,10 @@
           管理员可统一购买 API 后分配给团队成员使用。
         </div>
       </div>
+      <div class="card admin-only hidden" id="llm-provider-control">
+        <div class="card-title">API 启用状态管理（管理员）</div>
+        <div id="provider-status-table" style="font-size:13px;"></div>
+      </div>
     </div>
 
     <!-- Knowledge Base -->
@@ -695,6 +699,62 @@ function initSettingsPage() {
       apiCard.classList.add('hidden');
     }
   }
+  loadProviderStatus();
+}
+
+async function loadProviderStatus() {
+  const container = document.getElementById('provider-status-table');
+  const card = document.getElementById('llm-provider-control');
+  if (!container || !card) return;
+  if (!currentUser || currentUser.role !== 'admin') {
+    card.classList.add('hidden');
+  } else {
+    card.classList.remove('hidden');
+  }
+  try {
+    const res = await apiFetch(`${API_BASE}/api/llm/providers`);
+    const data = await res.json();
+    // Update dropdown to only show enabled providers
+    const select = document.getElementById('llm-provider');
+    if (select) {
+      const currentVal = select.value;
+      select.innerHTML = '';
+      Object.entries(data).forEach(([key, val]) => {
+        if (val.enabled !== false) {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = val.name || key;
+          select.appendChild(opt);
+        }
+      });
+      if (currentVal && select.querySelector(`option[value="${currentVal}"]`)) {
+        select.value = currentVal;
+      }
+    }
+    // Render admin status table
+    if (currentUser && currentUser.role === 'admin') {
+      let html = '<table><thead><tr><th>Provider</th><th>名称</th><th>Base URL</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+      Object.entries(data).forEach(([key, val]) => {
+        const status = val.enabled !== false ? '<span style="color:var(--green);">✅ 启用</span>' : '<span style="color:var(--red);">❌ 禁用</span>';
+        html += `<tr><td>${key}</td><td>${val.name}</td><td style="font-size:11px;color:var(--muted);">${val.base_url}</td><td>${status}</td><td><button class="btn btn-small btn-secondary" onclick="toggleProvider('${key}')">${val.enabled !== false ? '禁用' : '启用'}</button></td></tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+  } catch (e) { console.error('加载provider状态失败', e); }
+}
+
+async function toggleProvider(provider) {
+  try {
+    const res = await apiFetch(`${API_BASE}/api/llm/providers/${provider}/toggle`, {method: 'POST'});
+    const data = await res.json();
+    if (data.success) {
+      alert('状态已更新');
+      loadProviderStatus();
+    } else {
+      alert('更新失败: ' + (data.message || ''));
+    }
+  } catch (e) { alert('操作失败'); }
 }
 
 async function doLogin() {
