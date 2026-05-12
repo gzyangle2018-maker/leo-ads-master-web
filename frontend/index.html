@@ -1264,12 +1264,11 @@ let uploadedFileIds = [];
 async function handleFiles(files) {
   if (!files.length) return;
   uploadedFiles = Array.from(files);
-  uploadedFileIds = [];
   document.getElementById('file-status').textContent = `Uploading ${files.length} file(s)...`;
   document.getElementById('file-status').style.color = 'var(--orange)';
 
   const listContainer = document.getElementById('uploaded-files-list');
-  listContainer.innerHTML = '';
+  // Do NOT clear listContainer here — append new files to existing list
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -1286,10 +1285,12 @@ async function handleFiles(files) {
         uploadedFileIds.push(data.file_id);
         const confidenceColor = data.confidence > 0.6 ? 'var(--green)' : data.confidence > 0.3 ? 'var(--orange)' : 'var(--red)';
         const item = document.createElement('div');
+        item.className = 'file-card';
+        item.dataset.fileId = data.file_id;
         item.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;';
         item.innerHTML = `
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-weight:600;">✅ ${data.filename}</span>
+            <span style="font-weight:600;"> ${data.filename}</span>
             <span style="color:${confidenceColor};font-size:12px;">${(data.confidence*100).toFixed(0)}% match</span>
           </div>
           <div style="color:var(--muted);font-size:12px;margin-top:4px;">
@@ -1298,23 +1299,25 @@ async function handleFiles(files) {
             Parsed rows: ${data.rows} |
             Columns: ${(data.normalized_columns || []).join(', ') || 'N/A'}
           </div>
-          ${data.rows === 0 ? '<div style="color:var(--red);font-size:12px;margin-top:4px;">⚠️ No valid data rows after cleaning. Check file format.</div>' : ''}
+          ${data.rows === 0 ? '<div style="color:var(--red);font-size:12px;margin-top:4px;"> No valid data rows after cleaning. Check file format.</div>' : ''}
           <div style="margin-top:6px;">
-            <button class="btn btn-small btn-secondary" onclick="previewFile('${data.file_id}')" style="font-size:11px;padding:4px 10px;">🔍 Preview</button>
-            <button class="btn btn-small btn-secondary" onclick="removeFile('${data.file_id}', this)" style="font-size:11px;padding:4px 10px;">🗑️ Remove</button>
+            <button class="btn btn-small btn-secondary" onclick="previewFile('${data.file_id}')" style="font-size:11px;padding:4px 10px;"> Preview</button>
+            <button class="btn btn-small btn-secondary" onclick="removeFile('${data.file_id}', this)" style="font-size:11px;padding:4px 10px;"> Remove</button>
           </div>
         `;
         listContainer.appendChild(item);
       } else {
         const item = document.createElement('div');
+        item.className = 'file-card-error';
         item.style.cssText = 'background:var(--card);border:1px solid var(--red);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:var(--red);';
-        item.textContent = `❌ ${file.name}: ${data.detail || 'Parse failed'}`;
+        item.textContent = ` ${file.name}: ${data.detail || 'Parse failed'}`;
         listContainer.appendChild(item);
       }
     } catch (e) {
       const item = document.createElement('div');
+      item.className = 'file-card-error';
       item.style.cssText = 'background:var(--card);border:1px solid var(--red);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:var(--red);';
-      item.textContent = `❌ ${file.name}: ${e.message}`;
+      item.textContent = ` ${file.name}: ${e.message}`;
       listContainer.appendChild(item);
     }
   }
@@ -1331,12 +1334,29 @@ async function handleFiles(files) {
 
 function removeFile(fileId, btn) {
   uploadedFileIds = uploadedFileIds.filter(id => id !== fileId);
-  const item = btn.closest('div').parentElement;
-  item.remove();
+  const item = btn.closest('.file-card') || btn.closest('.file-card-error');
+  if (item) item.remove();
   if (uploadedFileIds.length === 0) {
     document.getElementById('file-status').textContent = t('file_status_none');
     document.getElementById('missing-alert').style.display = 'block';
   }
+}
+
+async function clearUploadedFiles() {
+  // Delete from backend first
+  for (const fid of uploadedFileIds) {
+    try {
+      await fetch(`${API_BASE}/api/uploaded-files/${fid}`, { method: 'DELETE' });
+    } catch (e) { /* ignore */ }
+  }
+  uploadedFiles = [];
+  uploadedFileIds = [];
+  document.getElementById('uploaded-files-list').innerHTML = '';
+  document.getElementById('file-status').textContent = t('file_status_none');
+  document.getElementById('file-status').style.color = 'var(--muted)';
+  document.getElementById('missing-alert').style.display = 'block';
+  document.getElementById('fileInput').value = '';
+  alert(t('clear_confirm'));
 }
 
 async function previewFile(fileId) {
@@ -1366,15 +1386,6 @@ function toggleLLMOptions() {
       options.classList.add('hidden');
     }
   }
-}
-
-function clearUploadedFiles() {
-  uploadedFiles = [];
-  uploadedFileIds = [];
-  document.getElementById('file-status').textContent = t('file_status_none');
-  document.getElementById('missing-alert').style.display = 'block';
-  document.getElementById('fileInput').value = '';
-  alert(t('clear_confirm'));
 }
 
 async function startAnalysis() {
