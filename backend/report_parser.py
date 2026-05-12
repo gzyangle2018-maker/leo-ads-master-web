@@ -190,6 +190,14 @@ class ReportParser:
         # 过滤掉全空行
         df_clean = df_clean.dropna(how='all')
 
+        # 将 Timestamp 等非 JSON 序列化类型转为字符串
+        for col in df_clean.columns:
+            if df_clean[col].dtype.name.startswith('datetime'):
+                df_clean[col] = df_clean[col].astype(str)
+            elif df_clean[col].dtype == 'object':
+                # 确保所有 object 列都是字符串
+                df_clean[col] = df_clean[col].astype(str).replace('nan', '').replace('None', '')
+
         return {
             'success': True,
             'filename': filename,
